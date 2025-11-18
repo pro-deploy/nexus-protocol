@@ -1,0 +1,69 @@
+# Документация планирования (внутренние файлы)
+ROADMAP.md
+ACTION_PLAN.md
+
+# IDE и редакторы
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Временные файлы
+*.tmp
+*.log
+*.bak
+*.cache
+
+# Go (если есть Go код в корне)
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+go.work
+
+# Python (если есть Python код)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Node.js (если есть Node код)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Build артефакты
+dist/
+build/
+*.egg-info/
+
+# Тестовые данные
+test_data/
+*.test.json
+*.test.yaml
+
+# Секреты и конфигурация
+.env
+.env.local
+*.key
+*.pem
+secrets/
+
+# Документация сборки
+docs/_build/
+site/
+

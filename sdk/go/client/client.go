@@ -1,0 +1,390 @@
+package client
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"time"
+
+	"github.com/nexus-protocol/go-sdk/types"
+)
+
+const (
+	// DefaultProtocolVersion версия протокола по умолчанию
+	DefaultProtocolVersion = "1.0.0"
+	// DefaultClientVersion версия клиента по умолчанию
+	DefaultClientVersion = "1.0.0"
+	// DefaultTimeout таймаут по умолчанию
+	DefaultTimeout = 30 * time.Second
+)
+
+// Client представляет клиент Nexus Protocol для взаимодействия с API.
+// Все методы клиента поддерживают context.Context для отмены запросов и таймаутов.
+type Client struct {
+	baseURL         string
+	token           string
+	httpClient      *http.Client
+	protocolVersion string
+	clientVersion   string
+	clientID        string
+	clientType      string
+	retryConfig     RetryConfig
+	logger          Logger
+	interceptors    []Interceptor
+	validator       *Validator
+}
+
+// Config содержит конфигурацию клиента.
+// BaseURL - базовый URL API сервера (например, "https://api.nexus.dev").
+// Token - JWT токен для аутентификации (опционально, можно установить позже через SetToken).
+type Config struct {
+	BaseURL         string
+	Token           string
+	Timeout         time.Duration
+	ProtocolVersion string
+	ClientVersion   string
+	ClientID        string
+	ClientType      string
+	RetryConfig     *RetryConfig // Конфигурация retry (nil = использовать по умолчанию)
+	Logger          Logger      // Логгер (nil = логирование отключено)
+	Validator       *Validator  // Валидатор для JSON Schema (nil = валидация отключена)
+}
+
+// NewClient создает новый клиент Nexus Protocol с указанной конфигурацией.
+// Если параметры не указаны, используются значения по умолчанию:
+// - ProtocolVersion: "1.0.0"
+// - ClientVersion: "1.0.0"
+// - Timeout: 30 секунд
+func NewClient(config Config) *Client {
+	if config.Timeout == 0 {
+		config.Timeout = DefaultTimeout
+	}
+	if config.ProtocolVersion == "" {
+		config.ProtocolVersion = DefaultProtocolVersion
+	}
+	if config.ClientVersion == "" {
+		config.ClientVersion = DefaultClientVersion
+	}
+
+	retryCfg := DefaultRetryConfig()
+	if config.RetryConfig != nil {
+		retryCfg = *config.RetryConfig
+	}
+
+	logger := config.Logger
+	if logger == nil {
+		logger = &NoOpLogger{}
+	}
+
+	return &Client{
+		baseURL:         config.BaseURL,
+		token:           config.Token,
+		protocolVersion: config.ProtocolVersion,
+		clientVersion:   config.ClientVersion,
+		clientID:        config.ClientID,
+		clientType:      config.ClientType,
+		retryConfig:     retryCfg,
+		logger:          logger,
+		interceptors:    make([]Interceptor, 0),
+		validator:       config.Validator,
+		httpClient: &http.Client{
+			Timeout: config.Timeout,
+		},
+	}
+}
+
+// SetToken устанавливает JWT токен для аутентификации.
+// Токен будет использоваться во всех последующих запросах.
+func (c *Client) SetToken(token string) {
+	c.token = token
+}
+
+// doRequest выполняет HTTP запрос с поддержкой context, retry и rate limiting
+func (c *Client) doRequest(ctx context.Context, method, path string, body interface{}) (*http.Response, error) {
+	var lastErr error
+	var lastResp *http.Response
+
+	for attempt := 0; attempt <= c.retryConfig.MaxRetries; attempt++ {
+		if attempt > 0 {
+			// Вычисляем задержку для retry
+			backoff := c.calculateBackoff(attempt - 1)
+			
+			c.logger.Debug("Retrying request",
+				Field{Key: "attempt", Value: attempt},
+				Field{Key: "backoff_ms", Value: backoff.Milliseconds()},
+				Field{Key: "path", Value: path},
+			)
+
+			// Ждем перед повтором
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(backoff):
+			}
+		}
+
+		// Создаем запрос
+		var reqBody io.Reader
+		if body != nil {
+			// Валидация запроса (если валидатор настроен)
+			if c.validator != nil && attempt == 0 {
+				// Определяем схему по пути (можно улучшить)
+				schemaName := c.getSchemaNameForPath(path)
+				if schemaName != "" {
+					if err := c.validator.ValidateRequest(schemaName, body); err != nil {
+						return nil, fmt.Errorf("request validation failed: %w", err)
+					}
+				}
+			}
+
+			jsonData, err := json.Marshal(body)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal request body: %w", err)
+			}
+			reqBody = bytes.NewBuffer(jsonData)
+		}
+
+		url := c.baseURL + path
+		req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %w", err)
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+		if c.token != "" {
+			req.Header.Set("Authorization", "Bearer "+c.token)
+		}
+
+		// Применяем interceptors перед запросом
+		if err := c.applyInterceptorsBefore(ctx, req); err != nil {
+			return nil, fmt.Errorf("interceptor error: %w", err)
+		}
+
+		// Логируем запрос
+		c.logger.Debug("Sending request",
+			Field{Key: "method", Value: method},
+			Field{Key: "path", Value: path},
+			Field{Key: "attempt", Value: attempt + 1},
+		)
+
+		startTime := time.Now()
+		resp, err := c.httpClient.Do(req)
+		duration := time.Since(startTime)
+
+		// Логируем ответ
+		statusCode := 0
+		if resp != nil {
+			statusCode = resp.StatusCode
+		}
+		c.logger.Debug("Received response",
+			Field{Key: "method", Value: method},
+			Field{Key: "path", Value: path},
+			Field{Key: "status_code", Value: statusCode},
+			Field{Key: "duration_ms", Value: duration.Milliseconds()},
+		)
+
+		// Применяем interceptors после ответа
+		if resp != nil {
+			if err := c.applyInterceptorsAfter(ctx, req, resp); err != nil {
+				if resp.Body != nil {
+					resp.Body.Close()
+				}
+				return nil, fmt.Errorf("interceptor error: %w", err)
+			}
+		}
+
+		// Обрабатываем ошибки
+		if err != nil {
+			lastErr = err
+			if !c.shouldRetry(attempt+1, err, 0) {
+				return nil, fmt.Errorf("request failed: %w", err)
+			}
+			continue
+		}
+
+		// Обрабатываем rate limiting (HTTP 429)
+		if resp.StatusCode == http.StatusTooManyRequests {
+			retryAfter := c.handleRateLimit(resp)
+			if c.shouldRetry(attempt+1, nil, resp.StatusCode) {
+				c.logger.Warn("Rate limited, waiting",
+					Field{Key: "retry_after_sec", Value: retryAfter.Seconds()},
+					Field{Key: "path", Value: path},
+				)
+				resp.Body.Close()
+				lastResp = resp
+				lastErr = fmt.Errorf("rate limited")
+				
+				// Ждем указанное время или используем backoff
+				waitTime := retryAfter
+				if waitTime == 0 {
+					waitTime = c.calculateBackoff(attempt)
+				}
+				
+				select {
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				case <-time.After(waitTime):
+				}
+				continue
+			}
+		}
+
+		// Проверяем другие retryable статусы
+		if resp.StatusCode >= 400 {
+			if c.shouldRetry(attempt+1, nil, resp.StatusCode) {
+				lastResp = resp
+				lastErr = fmt.Errorf("request failed with status %d", resp.StatusCode)
+				resp.Body.Close()
+				continue
+			}
+			// Не retryable ошибка - возвращаем сразу
+			return resp, nil
+		}
+
+		// Успешный ответ - валидация ответа (если валидатор настроен)
+		if c.validator != nil && resp.StatusCode < 400 {
+			schemaName := c.getSchemaNameForPath(path)
+			if schemaName != "" {
+				// Читаем body для валидации
+				bodyBytes, err := io.ReadAll(resp.Body)
+				if err == nil {
+					// Восстанавливаем body
+					resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+					
+					// Валидируем (можно улучшить, добавив схему для ответа)
+					// Пока пропускаем валидацию ответов, так как нужны разные схемы
+				}
+			}
+		}
+
+		return resp, nil
+	}
+
+	// Все попытки исчерпаны
+	if lastResp != nil {
+		return lastResp, lastErr
+	}
+	return nil, fmt.Errorf("request failed after %d attempts: %w", c.retryConfig.MaxRetries+1, lastErr)
+}
+
+// getSchemaNameForPath возвращает имя схемы для пути (базовая реализация)
+func (c *Client) getSchemaNameForPath(path string) string {
+	// Можно улучшить, добавив маппинг путей к схемам
+	// Пока возвращаем пустую строку (валидация отключена по умолчанию)
+	return ""
+}
+
+// SetValidator устанавливает валидатор для клиента
+func (c *Client) SetValidator(validator *Validator) {
+	c.validator = validator
+}
+
+// handleRateLimit обрабатывает rate limiting и возвращает время ожидания
+func (c *Client) handleRateLimit(resp *http.Response) time.Duration {
+	// Пытаемся получить Retry-After заголовок
+	retryAfter := resp.Header.Get("Retry-After")
+	if retryAfter != "" {
+		// Может быть число секунд или HTTP date
+		if seconds, err := time.ParseDuration(retryAfter + "s"); err == nil {
+			return seconds
+		}
+		if date, err := http.ParseTime(retryAfter); err == nil {
+			return time.Until(date)
+		}
+	}
+
+	// Пытаемся получить из метаданных ошибки
+	body, err := io.ReadAll(resp.Body)
+	if err == nil {
+		var errResp types.ErrorResponse
+		if json.Unmarshal(body, &errResp) == nil {
+			if resetAt, ok := errResp.Error.Metadata["reset_at"]; ok {
+				if resetTime, err := time.Parse(time.RFC3339, resetAt); err == nil {
+					return time.Until(resetTime)
+				}
+			}
+		}
+		// Восстанавливаем body для дальнейшей обработки
+		resp.Body = io.NopCloser(bytes.NewBuffer(body))
+	}
+
+	return 0
+}
+
+
+// parseResponse парсит ответ и обрабатывает ошибки
+func (c *Client) parseResponse(resp *http.Response, result interface{}) error {
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Проверяем на ошибку
+	if resp.StatusCode >= 400 {
+		var errResp types.ErrorResponse
+		if err := json.Unmarshal(body, &errResp); err == nil {
+			return &errResp.Error
+		}
+		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	// Парсим успешный ответ
+	if result != nil {
+		if err := json.Unmarshal(body, result); err != nil {
+			return fmt.Errorf("failed to unmarshal response: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// Health проверяет здоровье сервера.
+// Возвращает информацию о статусе сервера и его версии.
+func (c *Client) Health(ctx context.Context) (*types.HealthResponse, error) {
+	resp, err := c.doRequest(ctx, "GET", PathHealth, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result types.HealthResponse
+	if err := c.parseResponse(resp, &result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+// Ready проверяет готовность сервера (readiness probe для Kubernetes).
+// Возвращает детальную информацию о состоянии всех компонентов сервера.
+//
+// Пример использования:
+//
+//	ctx := context.Background()
+//	ready, err := client.Ready(ctx)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	if ready.Ready {
+//		fmt.Println("Server is ready")
+//	}
+func (c *Client) Ready(ctx context.Context) (*types.ReadinessResponse, error) {
+	resp, err := c.doRequest(ctx, "GET", PathReady, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result types.ReadinessResponse
+	if err := c.parseResponse(resp, &result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
