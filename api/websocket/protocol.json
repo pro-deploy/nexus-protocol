@@ -1,0 +1,806 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Nexus WebSocket Protocol",
+  "description": "WebSocket protocol specification for Nexus Protocol",
+  "version": "1.0.0",
+  "definitions": {
+
+    "WebSocketMessage": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Message type identifier",
+          "enum": [
+            "ping",
+            "pong",
+            "context_aware_template",
+            "chat_message",
+            "start_conversation",
+            "get_conversation_history",
+            "typing_start",
+            "typing_stop",
+            "subscribe",
+            "unsubscribe",
+            "error"
+          ]
+        },
+        "request_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique request identifier for correlation"
+        },
+        "payload": {
+          "type": "object",
+          "description": "Message payload data"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Message timestamp in ISO 8601 format"
+        }
+      },
+      "required": ["type", "timestamp"]
+    },
+
+    "WebSocketResponse": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Response type identifier"
+        },
+        "request_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Request ID from corresponding request"
+        },
+        "success": {
+          "type": "boolean",
+          "description": "Operation success status"
+        },
+        "data": {
+          "type": ["object", "null"],
+          "description": "Response data payload"
+        },
+        "error": {
+          "type": "string",
+          "description": "Error message if success is false"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Response timestamp"
+        }
+      },
+      "required": ["type", "success", "timestamp"]
+    },
+
+    "ExecuteTemplatePayload": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "description": "User query in natural language"
+        },
+        "language": {
+          "type": "string",
+          "enum": ["ru", "en"],
+          "default": "ru",
+          "description": "Query language"
+        },
+        "context": {
+          "$ref": "#/definitions/UserContext"
+        },
+        "options": {
+          "$ref": "#/definitions/ExecuteOptions"
+        }
+      },
+      "required": ["query"]
+    },
+
+    "ChatMessagePayload": {
+      "type": "object",
+      "properties": {
+        "conversation_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Conversation identifier"
+        },
+        "content": {
+          "type": "string",
+          "description": "Message content"
+        },
+        "message_type": {
+          "type": "string",
+          "enum": ["text", "voice", "image"],
+          "default": "text",
+          "description": "Type of message content"
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Additional message metadata"
+        }
+      },
+      "required": ["conversation_id", "content"]
+    },
+
+    "StartConversationPayload": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Conversation title",
+          "default": "New Conversation"
+        },
+        "bot_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Bot identifier for conversation"
+        },
+        "context": {
+          "type": "object",
+          "description": "Initial conversation context"
+        }
+      }
+    },
+
+    "GetConversationHistoryPayload": {
+      "type": "object",
+      "properties": {
+        "conversation_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Conversation identifier"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 50,
+          "description": "Number of messages to retrieve"
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Pagination offset"
+        }
+      },
+      "required": ["conversation_id"]
+    },
+
+    "TypingPayload": {
+      "type": "object",
+      "properties": {
+        "conversation_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Conversation identifier"
+        }
+      },
+      "required": ["conversation_id"]
+    },
+
+    "SubscribePayload": {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "type": "string",
+          "description": "Type of events to subscribe to",
+          "enum": [
+            "new_message",
+            "conversation_update",
+            "user_status",
+            "system_notification"
+          ]
+        },
+        "filter": {
+          "type": "object",
+          "description": "Event filtering criteria"
+        }
+      },
+      "required": ["event_type"]
+    },
+
+    "UserContext": {
+      "type": "object",
+      "properties": {
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User identifier"
+        },
+        "session_id": {
+          "type": "string",
+          "description": "Session identifier"
+        },
+        "tenant_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Tenant identifier"
+        },
+        "location": {
+          "$ref": "#/definitions/UserLocation"
+        }
+      }
+    },
+
+    "UserLocation": {
+      "type": "object",
+      "properties": {
+        "latitude": {
+          "type": "number",
+          "format": "float",
+          "minimum": -90,
+          "maximum": 90,
+          "description": "Latitude coordinate"
+        },
+        "longitude": {
+          "type": "number",
+          "format": "float",
+          "minimum": -180,
+          "maximum": 180,
+          "description": "Longitude coordinate"
+        },
+        "accuracy": {
+          "type": "number",
+          "format": "float",
+          "minimum": 0,
+          "description": "Location accuracy in meters"
+        }
+      }
+    },
+
+    "ExecuteOptions": {
+      "type": "object",
+      "properties": {
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 120000,
+          "default": 30000,
+          "description": "Execution timeout in milliseconds"
+        },
+        "max_results_per_domain": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 50,
+          "default": 5,
+          "description": "Maximum results per domain"
+        },
+        "parallel_execution": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable parallel domain execution"
+        },
+        "include_web_search": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include web search results"
+        }
+      }
+    },
+
+    "TemplateExecutionResponse": {
+      "type": "object",
+      "properties": {
+        "execution_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Execution identifier"
+        },
+        "intent_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Intent identifier"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["in_progress", "completed", "partial", "failed", "timeout"],
+          "description": "Execution status"
+        },
+        "query_type": {
+          "type": "string",
+          "enum": ["information_only", "with_purchases_services", "mixed"],
+          "description": "Type of query intent"
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DomainSection"
+          },
+          "description": "Results from different domains"
+        },
+        "web_search": {
+          "$ref": "#/definitions/WebSearchResult"
+        },
+        "ranking": {
+          "$ref": "#/definitions/RankingResult"
+        },
+        "metadata": {
+          "$ref": "#/definitions/ExecutionMetadata"
+        },
+        "processing_time_ms": {
+          "type": "integer",
+          "description": "Total processing time"
+        }
+      }
+    },
+
+    "DomainSection": {
+      "type": "object",
+      "properties": {
+        "domain_id": {
+          "type": "string",
+          "description": "Domain identifier"
+        },
+        "title": {
+          "type": "string",
+          "description": "Section title"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["success", "error", "timeout", "partial"],
+          "description": "Domain execution status"
+        },
+        "error": {
+          "type": "string",
+          "description": "Error message if status is error"
+        },
+        "response_time_ms": {
+          "type": "integer",
+          "description": "Response time in milliseconds"
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ResultItem"
+          },
+          "description": "Domain-specific results"
+        }
+      }
+    },
+
+    "ResultItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Result item identifier"
+        },
+        "type": {
+          "type": "string",
+          "description": "Result item type"
+        },
+        "title": {
+          "type": "string",
+          "description": "Result title"
+        },
+        "description": {
+          "type": "string",
+          "description": "Result description"
+        },
+        "data": {
+          "type": "object",
+          "description": "Structured result data"
+        },
+        "relevance": {
+          "type": "number",
+          "format": "float",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Relevance score"
+        },
+        "confidence": {
+          "type": "number",
+          "format": "float",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Confidence score"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Action"
+          },
+          "description": "Available actions"
+        }
+      }
+    },
+
+    "Action": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Action type"
+        },
+        "label": {
+          "type": "string",
+          "description": "Action label"
+        },
+        "url": {
+          "type": "string",
+          "description": "Action URL"
+        },
+        "method": {
+          "type": "string",
+          "enum": ["GET", "POST", "PUT", "DELETE"],
+          "description": "HTTP method"
+        },
+        "confirm_text": {
+          "type": "string",
+          "description": "Confirmation text for action"
+        }
+      },
+      "required": ["type", "label"]
+    },
+
+    "WebSearchResult": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SearchResult"
+          },
+          "description": "Search results"
+        },
+        "search_engine": {
+          "type": "string",
+          "description": "Search engine used"
+        },
+        "total_results": {
+          "type": "integer",
+          "description": "Total number of results"
+        }
+      }
+    },
+
+    "SearchResult": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Search result title"
+        },
+        "url": {
+          "type": "string",
+          "description": "Search result URL"
+        },
+        "snippet": {
+          "type": "string",
+          "description": "Search result snippet"
+        },
+        "relevance": {
+          "type": "number",
+          "format": "float",
+          "description": "Relevance score"
+        }
+      }
+    },
+
+    "RankingResult": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RankedItem"
+          },
+          "description": "Ranked items"
+        },
+        "algorithm": {
+          "type": "string",
+          "description": "Ranking algorithm used"
+        }
+      }
+    },
+
+    "RankedItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Item identifier"
+        },
+        "score": {
+          "type": "number",
+          "format": "float",
+          "description": "Ranking score"
+        },
+        "rank": {
+          "type": "integer",
+          "description": "Rank position"
+        }
+      }
+    },
+
+    "ExecutionMetadata": {
+      "type": "object",
+      "properties": {
+        "started_at": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Execution start timestamp"
+        },
+        "completed_at": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Execution completion timestamp"
+        },
+        "total_time_ms": {
+          "type": "integer",
+          "description": "Total execution time"
+        },
+        "domain_stats": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "Statistics per domain"
+        },
+        "domains_executed": {
+          "type": "integer",
+          "description": "Number of domains executed"
+        },
+        "results_count": {
+          "type": "integer",
+          "description": "Total number of results"
+        }
+      }
+    },
+
+    "ConversationResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Conversation identifier"
+        },
+        "user_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "User identifier"
+        },
+        "bot_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Bot identifier"
+        },
+        "title": {
+          "type": "string",
+          "description": "Conversation title"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "archived", "deleted"],
+          "description": "Conversation status"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp"
+        }
+      }
+    },
+
+    "MessageResponse": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "$ref": "#/definitions/Message"
+        },
+        "response": {
+          "$ref": "#/definitions/Message"
+        }
+      }
+    },
+
+    "Message": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Message identifier"
+        },
+        "conversation_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Conversation identifier"
+        },
+        "sender_type": {
+          "type": "string",
+          "enum": ["user", "assistant", "system"],
+          "description": "Sender type"
+        },
+        "content": {
+          "type": "string",
+          "description": "Message content"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["sent", "delivered", "read", "failed"],
+          "description": "Message status"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "intent": {
+          "type": "string",
+          "description": "Detected intent"
+        }
+      }
+    },
+
+    "ConversationHistoryResponse": {
+      "type": "object",
+      "properties": {
+        "conversation_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Conversation identifier"
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Message"
+          },
+          "description": "Conversation messages"
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Requested limit"
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Requested offset"
+        },
+        "total": {
+          "type": "integer",
+          "description": "Total number of messages"
+        }
+      }
+    }
+  },
+
+  "protocol": {
+    "name": "Nexus WebSocket Protocol",
+    "version": "1.0.0",
+    "transport": "WebSocket (RFC 6455)",
+    "encoding": "UTF-8 JSON",
+    "authentication": "JWT token in query parameter or header",
+    "heartbeat": "Ping/Pong every 30 seconds",
+    "max_message_size": "1MB",
+    "rate_limit": "100 messages per minute per connection",
+
+    "connection": {
+      "url": "ws://localhost:8081/ws?token=<jwt_token>",
+      "subprotocol": "nexus-json",
+      "headers": {
+        "Authorization": "Bearer <jwt_token>"
+      }
+    },
+
+    "message_flow": {
+      "request_response": {
+        "description": "Standard request-response pattern",
+        "correlation": "request_id field",
+        "timeout": "30 seconds default"
+      },
+      "streaming": {
+        "description": "Server-sent events for real-time updates",
+        "types": ["domain_result", "execution_complete", "new_message"],
+        "acknowledgment": "No explicit acknowledgment required"
+      },
+      "broadcast": {
+        "description": "Server broadcasts to subscribed clients",
+        "subscription": "subscribe/unsubscribe messages",
+        "filters": "Event type and criteria based filtering"
+      }
+    },
+
+    "error_handling": {
+      "format": {
+        "type": "error",
+        "request_id": "original request ID",
+        "error": "error message",
+        "success": false
+      },
+      "codes": {
+        "VALIDATION_ERROR": "Invalid message format or data",
+        "AUTHENTICATION_ERROR": "Invalid or expired token",
+        "AUTHORIZATION_ERROR": "Insufficient permissions",
+        "RATE_LIMIT_ERROR": "Too many messages",
+        "INTERNAL_ERROR": "Server internal error"
+      }
+    },
+
+    "examples": {
+      "authentication": {
+        "url": "ws://localhost:8081/ws?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "alternative": {
+          "url": "ws://localhost:8081/ws",
+          "header": "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        }
+      },
+
+      "execute_template": {
+        "request": {
+          "type": "context_aware_template",
+          "request_id": "550e8400-e29b-41d4-a716-446655440000",
+          "payload": {
+            "query": "хочу борщ",
+            "language": "ru"
+          },
+          "timestamp": "2025-01-18T10:00:00Z"
+        },
+        "response": {
+          "type": "context_aware_template_result",
+          "request_id": "550e8400-e29b-41d4-a716-446655440000",
+          "success": true,
+          "data": {
+            "execution_id": "550e8400-e29b-41d4-a716-446655440001",
+            "status": "completed",
+            "sections": [...]
+          },
+          "timestamp": "2025-01-18T10:00:15Z"
+        }
+      },
+
+      "chat_message": {
+        "request": {
+          "type": "chat_message",
+          "request_id": "550e8400-e29b-41d4-a716-446655440002",
+          "payload": {
+            "conversation_id": "550e8400-e29b-41d4-a716-446655440003",
+            "content": "Расскажи рецепт борща"
+          },
+          "timestamp": "2025-01-18T10:01:00Z"
+        },
+        "response": {
+          "type": "chat_message_sent",
+          "request_id": "550e8400-e29b-41d4-a716-446655440002",
+          "success": true,
+          "data": {
+            "message": {...},
+            "response": {...}
+          },
+          "timestamp": "2025-01-18T10:01:02Z"
+        }
+      },
+
+      "subscription": {
+        "subscribe": {
+          "type": "subscribe",
+          "request_id": "550e8400-e29b-41d4-a716-446655440004",
+          "payload": {
+            "event_type": "new_message"
+          },
+          "timestamp": "2025-01-18T10:02:00Z"
+        },
+        "broadcast": {
+          "type": "new_message",
+          "data": {
+            "conversation_id": "550e8400-e29b-41d4-a716-446655440003",
+            "message": {...},
+            "response": {...}
+          },
+          "timestamp": "2025-01-18T10:02:30Z"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,1134 @@
+openapi: 3.0.3
+info:
+  title: Nexus Protocol - HTTP REST API
+  description: |
+    Nexus AI Platform - Nexus Protocol
+    HTTP REST API Specification v1.0.0
+  version: 1.0.0
+  contact:
+    name: Биркин Максим
+    email: contact@nexus.dev
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Development server
+  - url: https://api.nexus.dev/api/v1
+    description: Production server
+
+security:
+  - bearerAuth: []
+  - apiKey: []
+
+paths:
+  # Health Checks
+  /health:
+    get:
+      summary: Health check
+      description: Basic health check for load balancers
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: "1.0.0"
+
+  /ready:
+    get:
+      summary: Readiness probe
+      description: Detailed readiness check for Kubernetes
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ready"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  checks:
+                    type: object
+                    properties:
+                      database:
+                        type: string
+                        example: "ok"
+                      redis:
+                        type: string
+                        example: "ok"
+                      ai_services:
+                        type: string
+                        example: "ok"
+
+  # Context-Aware Templates
+  /templates/execute:
+    post:
+      summary: Execute context-aware template
+      description: Execute a template with AI-powered context analysis
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  description: User query in natural language
+                  example: "хочу борщ"
+                  minLength: 1
+                  maxLength: 1000
+                language:
+                  type: string
+                  description: Language code (ISO 639-1)
+                  example: "ru"
+                  enum: ["ru", "en"]
+                  default: "ru"
+                context:
+                  $ref: '#/components/schemas/UserContext'
+                options:
+                  $ref: '#/components/schemas/ExecuteOptions'
+                metadata:
+                  $ref: '#/components/schemas/RequestMetadata'
+      responses:
+        '200':
+          description: Template executed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ExecuteTemplateResponse'
+                  metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/AuthenticationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /templates/status/{executionId}:
+    get:
+      summary: Get execution status
+      description: Get the status of a template execution
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: executionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Execution ID
+      responses:
+        '200':
+          description: Execution status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/TemplateExecution'
+                  metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /templates/stream/{executionId}:
+    get:
+      summary: Stream template results
+      description: Stream template execution results in real-time (Server-Sent Events)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: executionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Server-Sent Events stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                example: |
+                  event: domain_result
+                  data: {"domain_id": "commerce", "status": "completed", "results": [...]}
+
+                  event: execution_complete
+                  data: {"execution_id": "123", "status": "completed"}
+
+  # Identity & Access Management
+  /auth/register:
+    post:
+      summary: Register new user
+      description: Create a new user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - first_name
+                - last_name
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "user@example.com"
+                password:
+                  type: string
+                  minLength: 8
+                  example: "password123"
+                first_name:
+                  type: string
+                  example: "John"
+                last_name:
+                  type: string
+                  example: "Doe"
+                tenant_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      user_id:
+                        type: string
+                        format: uuid
+                      message:
+                        type: string
+                        example: "User registered successfully"
+                      verification_required:
+                        type: boolean
+                        example: true
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      summary: User login
+      description: Authenticate user and return JWT tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      access_token:
+                        type: string
+                        example: "eyJhbGciOiJSUzI1NiIs..."
+                      refresh_token:
+                        type: string
+                        example: "refresh_token_123"
+                      token_type:
+                        type: string
+                        example: "Bearer"
+                      expires_in:
+                        type: integer
+                        example: 3600
+                      user:
+                        $ref: '#/components/schemas/UserProfile'
+        '401':
+          $ref: '#/components/responses/AuthenticationError'
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      description: Get new access token using refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      access_token:
+                        type: string
+                      token_type:
+                        type: string
+                        example: "Bearer"
+                      expires_in:
+                        type: integer
+
+  /users/profile:
+    get:
+      summary: Get user profile
+      description: Get current user profile information
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserProfile'
+    put:
+      summary: Update user profile
+      description: Update current user profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                first_name:
+                  type: string
+                last_name:
+                  type: string
+                bio:
+                  type: string
+                  maxLength: 500
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UserProfile'
+
+  # Conversational AI
+  /conversations:
+    post:
+      summary: Create conversation
+      description: Start a new AI conversation
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  example: "Recipe Discussion"
+                bot_id:
+                  type: string
+                  format: uuid
+                context:
+                  type: object
+                system_prompt:
+                  type: string
+      responses:
+        '201':
+          description: Conversation created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Conversation'
+
+  /conversations/{conversationId}:
+    get:
+      summary: Get conversation
+      description: Get conversation details and messages
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Conversation retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Conversation'
+
+  /conversations/{conversationId}/messages:
+    post:
+      summary: Send message
+      description: Send a message to the AI conversation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+                message_type:
+                  type: string
+                  enum: [text, voice, image]
+                  default: text
+                metadata:
+                  type: object
+      responses:
+        '200':
+          description: Message processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MessageResponse'
+
+  # Analytics
+  /analytics/events:
+    post:
+      summary: Log analytics event
+      description: Log an analytics event for tracking
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - event_type
+              properties:
+                event_type:
+                  type: string
+                  example: "user_login"
+                user_id:
+                  type: string
+                  format: uuid
+                tenant_id:
+                  type: string
+                  format: uuid
+                data:
+                  type: object
+      responses:
+        '201':
+          description: Event logged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      event_id:
+                        type: string
+                        format: uuid
+                      message:
+                        type: string
+                      timestamp:
+                        type: string
+                        format: date-time
+
+    get:
+      summary: Get analytics events
+      description: Retrieve analytics events with filtering
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: event_type
+          in: query
+          schema:
+            type: string
+        - name: user_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Events retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      events:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AnalyticsEvent'
+                      total:
+                        type: integer
+                      limit:
+                        type: integer
+                      offset:
+                        type: integer
+
+  /analytics/stats:
+    get:
+      summary: Get analytics statistics
+      description: Get comprehensive analytics statistics
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: user_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: days
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 7
+      responses:
+        '200':
+          description: Statistics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AnalyticsStats'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    # Common schemas
+    RequestMetadata:
+      type: object
+      properties:
+        request_id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        client_version:
+          type: string
+          example: "1.0.0"
+        protocol_version:
+          type: string
+          example: "1.0.0"
+        client_id:
+          type: string
+          example: "web-app"
+        client_type:
+          type: string
+          enum: [web, mobile, sdk, api]
+          example: "web"
+        timestamp:
+          type: integer
+          format: int64
+          example: 1640995200
+        custom_headers:
+          type: object
+          additionalProperties:
+            type: string
+
+    ResponseMetadata:
+      type: object
+      properties:
+        request_id:
+          type: string
+          format: uuid
+        server_version:
+          type: string
+          example: "1.0.0"
+        protocol_version:
+          type: string
+          example: "1.0.0"
+        timestamp:
+          type: integer
+          format: int64
+        processing_time_ms:
+          type: integer
+          example: 150
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: "VALIDATION_FAILED"
+            type:
+              type: string
+              example: "VALIDATION_ERROR"
+            message:
+              type: string
+              example: "Query cannot be empty"
+            field:
+              type: string
+              example: "query"
+            details:
+              type: string
+            metadata:
+              type: object
+
+    # Domain-specific schemas
+    UserContext:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        session_id:
+          type: string
+        tenant_id:
+          type: string
+          format: uuid
+        location:
+          $ref: '#/components/schemas/UserLocation'
+
+    UserLocation:
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: float
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          format: float
+          minimum: -180
+          maximum: 180
+        accuracy:
+          type: number
+          format: float
+          minimum: 0
+
+    ExecuteOptions:
+      type: object
+      properties:
+        timeout_ms:
+          type: integer
+          minimum: 0
+          maximum: 120000
+          default: 30000
+        max_results_per_domain:
+          type: integer
+          minimum: 0
+          maximum: 50
+          default: 5
+        parallel_execution:
+          type: boolean
+          default: true
+        include_web_search:
+          type: boolean
+          default: true
+
+    ExecuteTemplateResponse:
+      type: object
+      properties:
+        execution_id:
+          type: string
+          format: uuid
+        intent_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [in_progress, completed, partial, failed, timeout]
+        query_type:
+          type: string
+          enum: [information_only, with_purchases_services, mixed]
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/DomainSection'
+        web_search:
+          $ref: '#/components/schemas/WebSearchResult'
+        ranking:
+          $ref: '#/components/schemas/RankingResult'
+        metadata:
+          $ref: '#/components/schemas/ExecutionMetadata'
+        processing_time_ms:
+          type: integer
+
+    DomainSection:
+      type: object
+      properties:
+        domain_id:
+          type: string
+          example: "commerce"
+        title:
+          type: string
+          example: "Product Recommendations"
+        status:
+          type: string
+          enum: [success, error, timeout, partial]
+        error:
+          type: string
+        response_time_ms:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResultItem'
+
+    ResultItem:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          example: "product"
+        title:
+          type: string
+        description:
+          type: string
+        data:
+          type: object
+        relevance:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Action'
+
+    Action:
+      type: object
+      properties:
+        type:
+          type: string
+          example: "add_to_cart"
+        label:
+          type: string
+          example: "Добавить в корзину"
+        url:
+          type: string
+        method:
+          type: string
+          enum: [GET, POST, PUT, DELETE]
+        confirm_text:
+          type: string
+
+    WebSearchResult:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+        search_engine:
+          type: string
+          example: "google"
+        total_results:
+          type: integer
+
+    SearchResult:
+      type: object
+      properties:
+        title:
+          type: string
+        url:
+          type: string
+        snippet:
+          type: string
+        relevance:
+          type: number
+          format: float
+
+    RankingResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RankedItem'
+        algorithm:
+          type: string
+          example: "relevance_score"
+
+    RankedItem:
+      type: object
+      properties:
+        id:
+          type: string
+        score:
+          type: number
+          format: float
+        rank:
+          type: integer
+
+    ExecutionMetadata:
+      type: object
+      properties:
+        started_at:
+          type: integer
+          format: int64
+        completed_at:
+          type: integer
+          format: int64
+        total_time_ms:
+          type: integer
+        domain_stats:
+          type: object
+          additionalProperties:
+            type: integer
+        domains_executed:
+          type: integer
+        results_count:
+          type: integer
+
+    TemplateExecution:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        intent_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [in_progress, completed, partial, failed, timeout]
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        error_message:
+          type: string
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive, suspended]
+        roles:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: integer
+          format: int64
+        last_login_at:
+          type: integer
+          format: int64
+
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        bot_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          type: string
+          enum: [active, archived, deleted]
+        message_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        last_activity:
+          type: string
+          format: date-time
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        conversation_id:
+          type: string
+          format: uuid
+        sender_id:
+          type: string
+          format: uuid
+        sender_type:
+          type: string
+          enum: [user, assistant, system]
+        type:
+          type: string
+          enum: [text, voice, image]
+        content:
+          type: string
+        status:
+          type: string
+          enum: [sent, delivered, read, failed]
+        created_at:
+          type: string
+          format: date-time
+        intent:
+          type: string
+
+    MessageResponse:
+      type: object
+      properties:
+        conversation_id:
+          type: string
+          format: uuid
+        user_message:
+          $ref: '#/components/schemas/Message'
+        ai_response:
+          $ref: '#/components/schemas/Message'
+        conversation_status:
+          type: string
+        total_messages:
+          type: integer
+
+    AnalyticsEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        event_type:
+          type: string
+        user_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        data:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+
+    AnalyticsStats:
+      type: object
+      properties:
+        period_days:
+          type: integer
+        total_events:
+          type: integer
+        total_users:
+          type: integer
+        active_users:
+          type: integer
+        events_today:
+          type: integer
+        top_events:
+          type: array
+          items:
+            type: object
+            properties:
+              event:
+                type: string
+              count:
+                type: integer
+              percentage:
+                type: number
+                format: float
+        user_activity:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              active_users:
+                type: integer
+              total_events:
+                type: integer
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    AuthenticationError:
+      description: Authentication failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    AuthorizationError:
+      description: Authorization failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    RateLimitError:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

@@ -1,0 +1,726 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Nexus Protocol Schema",
+  "description": "JSON Schema for Nexus Protocol messages and data structures",
+  "version": "1.0.0",
+  "definitions": {
+
+    "UUID": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "description": "Universally Unique Identifier (UUID) format"
+    },
+
+    "Timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp"
+    },
+
+    "Version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9.-]+)?(\\+[a-zA-Z0-9.-]+)?$",
+      "description": "Semantic version format"
+    },
+
+    "RequestMetadata": {
+      "type": "object",
+      "properties": {
+        "request_id": { "$ref": "#/definitions/UUID" },
+        "client_version": { "$ref": "#/definitions/Version" },
+        "protocol_version": { "$ref": "#/definitions/Version" },
+        "client_id": { "type": "string", "maxLength": 100 },
+        "client_type": {
+          "type": "string",
+          "enum": ["web", "mobile", "sdk", "api", "desktop"]
+        },
+        "timestamp": { "type": "integer", "format": "int64" },
+        "custom_headers": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      },
+      "required": ["request_id", "client_version", "protocol_version"],
+      "additionalProperties": false
+    },
+
+    "ResponseMetadata": {
+      "type": "object",
+      "properties": {
+        "request_id": { "$ref": "#/definitions/UUID" },
+        "server_version": { "$ref": "#/definitions/Version" },
+        "protocol_version": { "$ref": "#/definitions/Version" },
+        "timestamp": { "type": "integer", "format": "int64" },
+        "processing_time_ms": { "type": "integer", "minimum": 0 }
+      },
+      "required": ["request_id", "server_version", "protocol_version", "timestamp"],
+      "additionalProperties": false
+    },
+
+    "ErrorDetail": {
+      "type": "object",
+      "properties": {
+        "error_code": {
+          "type": "string",
+          "enum": [
+            "VALIDATION_FAILED",
+            "AUTHENTICATION_FAILED",
+            "AUTHORIZATION_FAILED",
+            "RESOURCE_NOT_FOUND",
+            "RESOURCE_CONFLICT",
+            "RATE_LIMIT_EXCEEDED",
+            "INTERNAL_ERROR",
+            "EXTERNAL_SERVICE_ERROR",
+            "PROTOCOL_VERSION_MISMATCH"
+          ]
+        },
+        "error_type": {
+          "type": "string",
+          "enum": [
+            "VALIDATION_ERROR",
+            "AUTHENTICATION_ERROR",
+            "AUTHORIZATION_ERROR",
+            "NOT_FOUND",
+            "CONFLICT",
+            "RATE_LIMIT_ERROR",
+            "INTERNAL_ERROR",
+            "EXTERNAL_ERROR",
+            "PROTOCOL_VERSION_ERROR"
+          ]
+        },
+        "message": { "type": "string", "maxLength": 1000 },
+        "field": { "type": "string", "maxLength": 100 },
+        "details": { "type": "string", "maxLength": 5000 },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      },
+      "required": ["error_code", "error_type", "message"],
+      "additionalProperties": false
+    },
+
+    "UserContext": {
+      "type": "object",
+      "properties": {
+        "user_id": { "$ref": "#/definitions/UUID" },
+        "session_id": { "type": "string", "maxLength": 100 },
+        "tenant_id": { "$ref": "#/definitions/UUID" },
+        "location": { "$ref": "#/definitions/UserLocation" }
+      },
+      "additionalProperties": false
+    },
+
+    "UserLocation": {
+      "type": "object",
+      "properties": {
+        "latitude": {
+          "type": "number",
+          "format": "float",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "longitude": {
+          "type": "number",
+          "format": "float",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "accuracy": {
+          "type": "number",
+          "format": "float",
+          "minimum": 0
+        }
+      },
+      "required": ["latitude", "longitude"],
+      "additionalProperties": false
+    },
+
+    "ExecuteOptions": {
+      "type": "object",
+      "properties": {
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 120000,
+          "default": 30000
+        },
+        "max_results_per_domain": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 50,
+          "default": 5
+        },
+        "parallel_execution": {
+          "type": "boolean",
+          "default": true
+        },
+        "include_web_search": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "ExecuteTemplateRequest": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "language": {
+          "type": "string",
+          "enum": ["ru", "en"],
+          "default": "ru"
+        },
+        "context": { "$ref": "#/definitions/UserContext" },
+        "options": { "$ref": "#/definitions/ExecuteOptions" },
+        "metadata": { "$ref": "#/definitions/RequestMetadata" }
+      },
+      "required": ["query"],
+      "additionalProperties": false
+    },
+
+    "ExecuteTemplateResponse": {
+      "type": "object",
+      "properties": {
+        "execution_id": { "$ref": "#/definitions/UUID" },
+        "intent_id": { "$ref": "#/definitions/UUID" },
+        "status": {
+          "type": "string",
+          "enum": ["in_progress", "completed", "partial", "failed", "timeout"]
+        },
+        "query_type": {
+          "type": "string",
+          "enum": ["information_only", "with_purchases_services", "mixed"]
+        },
+        "sections": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/DomainSection" }
+        },
+        "web_search": { "$ref": "#/definitions/WebSearchResult" },
+        "ranking": { "$ref": "#/definitions/RankingResult" },
+        "metadata": { "$ref": "#/definitions/ExecutionMetadata" },
+        "processing_time_ms": { "type": "integer", "minimum": 0 },
+        "response_metadata": { "$ref": "#/definitions/ResponseMetadata" }
+      },
+      "required": ["execution_id", "status", "processing_time_ms"],
+      "additionalProperties": false
+    },
+
+    "DomainSection": {
+      "type": "object",
+      "properties": {
+        "domain_id": { "type": "string", "maxLength": 100 },
+        "title": { "type": "string", "maxLength": 500 },
+        "status": {
+          "type": "string",
+          "enum": ["success", "error", "timeout", "partial"]
+        },
+        "error": { "type": "string", "maxLength": 1000 },
+        "response_time_ms": { "type": "integer", "minimum": 0 },
+        "results": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/ResultItem" }
+        }
+      },
+      "required": ["domain_id", "status"],
+      "additionalProperties": false
+    },
+
+    "ResultItem": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 100 },
+        "type": { "type": "string", "maxLength": 100 },
+        "title": { "type": "string", "maxLength": 500 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "relevance": {
+          "type": "number",
+          "format": "float",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "confidence": {
+          "type": "number",
+          "format": "float",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "actions": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Action" }
+        }
+      },
+      "required": ["id", "type", "title", "relevance", "confidence"],
+      "additionalProperties": false
+    },
+
+    "Action": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "maxLength": 100 },
+        "label": { "type": "string", "maxLength": 200 },
+        "url": { "type": "string", "format": "uri" },
+        "method": {
+          "type": "string",
+          "enum": ["GET", "POST", "PUT", "DELETE", "PATCH"]
+        },
+        "confirm_text": { "type": "string", "maxLength": 500 }
+      },
+      "required": ["type", "label"],
+      "additionalProperties": false
+    },
+
+    "WebSearchResult": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/SearchResult" }
+        },
+        "search_engine": { "type": "string", "maxLength": 50 },
+        "total_results": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+
+    "SearchResult": {
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 500 },
+        "url": { "type": "string", "format": "uri" },
+        "snippet": { "type": "string", "maxLength": 2000 },
+        "relevance": {
+          "type": "number",
+          "format": "float",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": ["title", "url"],
+      "additionalProperties": false
+    },
+
+    "RankingResult": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/RankedItem" }
+        },
+        "algorithm": { "type": "string", "maxLength": 100 }
+      },
+      "additionalProperties": false
+    },
+
+    "RankedItem": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 100 },
+        "score": { "type": "number", "format": "float" },
+        "rank": { "type": "integer", "minimum": 1 }
+      },
+      "required": ["id", "score", "rank"],
+      "additionalProperties": false
+    },
+
+    "ExecutionMetadata": {
+      "type": "object",
+      "properties": {
+        "started_at": { "type": "integer", "format": "int64" },
+        "completed_at": { "type": "integer", "format": "int64" },
+        "total_time_ms": { "type": "integer", "minimum": 0 },
+        "domain_stats": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "domains_executed": { "type": "integer", "minimum": 0 },
+        "results_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+
+    "Intent": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/definitions/UUID" },
+        "query": { "type": "string", "maxLength": 1000 },
+        "query_type": {
+          "type": "string",
+          "enum": ["information_only", "with_purchases_services", "mixed"]
+        },
+        "domain_relevance": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/DomainRelevance" }
+        },
+        "entities": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/DetectedEntity" }
+        },
+        "confidence": {
+          "type": "number",
+          "format": "float",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "processing_time": { "type": "integer", "minimum": 0 },
+        "created_at": { "$ref": "#/definitions/Timestamp" },
+        "context": { "$ref": "#/definitions/UserContext" }
+      },
+      "required": ["id", "query", "query_type", "confidence", "created_at"],
+      "additionalProperties": false
+    },
+
+    "DomainRelevance": {
+      "type": "object",
+      "properties": {
+        "domain": { "type": "string", "maxLength": 100 },
+        "score": {
+          "type": "number",
+          "format": "float",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "matched_keywords": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "capabilities": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["domain", "score"],
+      "additionalProperties": false
+    },
+
+    "DetectedEntity": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["product", "service", "location", "datetime", "amount", "document", "instruction"]
+        },
+        "value": { "type": "string", "maxLength": 500 },
+        "text": { "type": "string", "maxLength": 500 },
+        "start": { "type": "integer", "minimum": 0 },
+        "end": { "type": "integer", "minimum": 0 },
+        "confidence": {
+          "type": "number",
+          "format": "float",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "domains": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["type", "value", "confidence"],
+      "additionalProperties": false
+    },
+
+    "TemplateExecution": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/definitions/UUID" },
+        "intent_id": { "$ref": "#/definitions/UUID" },
+        "status": {
+          "type": "string",
+          "enum": ["in_progress", "completed", "partial", "failed", "timeout"]
+        },
+        "started_at": { "$ref": "#/definitions/Timestamp" },
+        "completed_at": { "$ref": "#/definitions/Timestamp" },
+        "error_message": { "type": "string", "maxLength": 1000 },
+        "aggregated_result": { "$ref": "#/definitions/AggregatedResult" },
+        "metadata": { "$ref": "#/definitions/ExecutionMetadata" }
+      },
+      "required": ["id", "intent_id", "status", "started_at", "aggregated_result", "metadata"],
+      "additionalProperties": false
+    },
+
+    "AggregatedResult": {
+      "type": "object",
+      "properties": {
+        "web_search": { "$ref": "#/definitions/WebSearchResult" },
+        "sections": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/DomainSection" }
+        },
+        "ranking": { "$ref": "#/definitions/RankingResult" }
+      },
+      "additionalProperties": false
+    },
+
+    "UserProfile": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/definitions/UUID" },
+        "email": { "type": "string", "format": "email" },
+        "username": { "type": "string", "maxLength": 50 },
+        "first_name": { "type": "string", "maxLength": 100 },
+        "last_name": { "type": "string", "maxLength": 100 },
+        "status": {
+          "type": "string",
+          "enum": ["active", "inactive", "suspended", "pending"]
+        },
+        "roles": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "created_at": { "type": "integer", "format": "int64" },
+        "last_login_at": { "type": "integer", "format": "int64" }
+      },
+      "required": ["id", "email", "status", "roles", "created_at"],
+      "additionalProperties": false
+    },
+
+    "Conversation": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/definitions/UUID" },
+        "user_id": { "$ref": "#/definitions/UUID" },
+        "bot_id": { "$ref": "#/definitions/UUID" },
+        "title": { "type": "string", "maxLength": 200 },
+        "status": {
+          "type": "string",
+          "enum": ["active", "archived", "deleted"]
+        },
+        "message_count": { "type": "integer", "minimum": 0 },
+        "created_at": { "$ref": "#/definitions/Timestamp" },
+        "last_activity": { "$ref": "#/definitions/Timestamp" }
+      },
+      "required": ["id", "user_id", "status", "message_count", "created_at"],
+      "additionalProperties": false
+    },
+
+    "Message": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/definitions/UUID" },
+        "conversation_id": { "$ref": "#/definitions/UUID" },
+        "sender_type": {
+          "type": "string",
+          "enum": ["user", "assistant", "system"]
+        },
+        "content": { "type": "string", "maxLength": 10000 },
+        "type": {
+          "type": "string",
+          "enum": ["text", "voice", "image"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["sent", "delivered", "read", "failed"]
+        },
+        "created_at": { "$ref": "#/definitions/Timestamp" },
+        "intent": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["id", "conversation_id", "sender_type", "content", "type", "status", "created_at"],
+      "additionalProperties": false
+    },
+
+    "AnalyticsEvent": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/definitions/UUID" },
+        "event_type": { "type": "string", "maxLength": 100 },
+        "user_id": { "$ref": "#/definitions/UUID" },
+        "tenant_id": { "$ref": "#/definitions/UUID" },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "timestamp": { "$ref": "#/definitions/Timestamp" }
+      },
+      "required": ["id", "event_type", "timestamp"],
+      "additionalProperties": false
+    },
+
+    "AnalyticsStats": {
+      "type": "object",
+      "properties": {
+        "period_days": { "type": "integer", "minimum": 1 },
+        "total_events": { "type": "integer", "minimum": 0 },
+        "total_users": { "type": "integer", "minimum": 0 },
+        "active_users": { "type": "integer", "minimum": 0 },
+        "events_today": { "type": "integer", "minimum": 0 },
+        "top_events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "event": { "type": "string" },
+              "count": { "type": "integer", "minimum": 0 },
+              "percentage": { "type": "number", "format": "float" }
+            },
+            "required": ["event", "count", "percentage"],
+            "additionalProperties": false
+          }
+        },
+        "user_activity": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "date": { "type": "string", "format": "date" },
+              "active_users": { "type": "integer", "minimum": 0 },
+              "total_events": { "type": "integer", "minimum": 0 }
+            },
+            "required": ["date", "active_users", "total_events"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["period_days", "total_events", "total_users"],
+      "additionalProperties": false
+    },
+
+    "ErrorResponse": {
+      "type": "object",
+      "properties": {
+        "error": { "$ref": "#/definitions/ErrorDetail" }
+      },
+      "required": ["error"],
+      "additionalProperties": false
+    },
+
+    "SuccessResponse": {
+      "type": "object",
+      "properties": {
+        "data": true,
+        "metadata": { "$ref": "#/definitions/ResponseMetadata" }
+      },
+      "required": ["data"],
+      "additionalProperties": false
+    },
+
+    "WebSocketMessage": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "ping", "pong", "error",
+            "context_aware_template",
+            "chat_message", "start_conversation", "get_conversation_history",
+            "typing_start", "typing_stop",
+            "subscribe", "unsubscribe"
+          ]
+        },
+        "request_id": { "$ref": "#/definitions/UUID" },
+        "payload": { "type": "object" },
+        "timestamp": { "$ref": "#/definitions/Timestamp" }
+      },
+      "required": ["type", "timestamp"],
+      "additionalProperties": false
+    },
+
+    "WebSocketResponse": {
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "request_id": { "$ref": "#/definitions/UUID" },
+        "success": { "type": "boolean" },
+        "data": true,
+        "error": { "type": "string" },
+        "timestamp": { "$ref": "#/definitions/Timestamp" }
+      },
+      "required": ["type", "success", "timestamp"],
+      "additionalProperties": false
+    },
+
+    "DomainEntity": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/definitions/UUID" },
+        "name": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "version": { "$ref": "#/definitions/Version" },
+        "endpoint": { "type": "string", "format": "uri" },
+        "capabilities": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "keywords": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "created_at": { "$ref": "#/definitions/Timestamp" },
+        "updated_at": { "$ref": "#/definitions/Timestamp" }
+      },
+      "required": ["id", "name", "version", "capabilities", "keywords", "created_at", "updated_at"],
+      "additionalProperties": false
+    },
+
+    "VersionInfo": {
+      "type": "object",
+      "properties": {
+        "protocol_version": { "$ref": "#/definitions/Version" },
+        "server_version": { "$ref": "#/definitions/Version" },
+        "api_version": { "type": "string" },
+        "build_info": {
+          "type": "object",
+          "properties": {
+            "git_commit": { "type": "string" },
+            "build_time": { "$ref": "#/definitions/Timestamp" },
+            "go_version": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "domain_versions": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/Version" }
+        }
+      },
+      "required": ["protocol_version", "server_version", "api_version"],
+      "additionalProperties": false
+    }
+  },
+
+  "type": "object",
+  "properties": {
+    "protocol": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "enum": ["Nexus"] },
+        "version": { "$ref": "#/definitions/Version" },
+        "description": { "type": "string" },
+        "domains": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/DomainEntity" }
+        },
+        "transports": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["http", "grpc", "websocket", "mcp"]
+          }
+        },
+        "security": {
+          "type": "object",
+          "properties": {
+            "authentication": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "authorization": { "type": "string" },
+            "encryption": { "type": "string" }
+          }
+        }
+      },
+      "required": ["name", "version", "domains", "transports"]
+    }
+  }
+}
