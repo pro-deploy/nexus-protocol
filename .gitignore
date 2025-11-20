@@ -27,6 +27,12 @@ ACTION_PLAN.md
 vendor/
 go.work
 
+# Бинарные файлы SDK (собранные примеры)
+sdk/go/batch
+sdk/go/webhooks
+sdk/go/examples/**/enterprise
+sdk/go/examples/**/*.exe
+
 # Python (если есть Python код)
 __pycache__/
 *.py[cod]

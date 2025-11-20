@@ -225,8 +225,8 @@ func TestLogin_AuthenticationError(t *testing.T) {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(`{
 			"error": {
-				"code": "AUTHENTICATION_FAILED",
-				"type": "AUTHENTICATION_ERROR",
+				"error_code": "AUTHENTICATION_FAILED",
+				"error_type": "AUTHENTICATION_ERROR",
 				"message": "Invalid credentials"
 			}
 		}`))

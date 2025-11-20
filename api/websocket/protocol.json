@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Nexus WebSocket Protocol",
   "description": "WebSocket protocol specification for Nexus Protocol",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "definitions": {
 
     "WebSocketMessage": {
@@ -22,6 +22,12 @@
             "typing_stop",
             "subscribe",
             "unsubscribe",
+            "batch_execute",
+            "batch_status",
+            "webhook_register",
+            "webhook_unregister",
+            "webhook_list",
+            "webhook_deliveries",
             "error"
           ]
         },
@@ -673,12 +679,216 @@
           "description": "Total number of messages"
         }
       }
+    },
+
+    "BatchExecutePayload": {
+      "type": "object",
+      "properties": {
+        "requests": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ExecuteTemplatePayload"
+          },
+          "minItems": 1,
+          "maxItems": 100,
+          "description": "Batch of template execution requests"
+        },
+        "batch_options": {
+          "$ref": "#/definitions/ExecuteOptions"
+        }
+      },
+      "required": ["requests"]
+    },
+
+    "BatchStatusPayload": {
+      "type": "object",
+      "properties": {
+        "batch_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Batch execution identifier"
+        }
+      },
+      "required": ["batch_id"]
+    },
+
+    "WebhookRegisterPayload": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Webhook URL"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["template_executed", "batch_completed", "error_occurred"]
+          },
+          "description": "Events to subscribe to"
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Additional headers"
+        },
+        "secret": {
+          "type": "string",
+          "minLength": 16,
+          "description": "Secret for signature verification"
+        }
+      },
+      "required": ["url", "events"]
+    },
+
+    "WebhookUnregisterPayload": {
+      "type": "object",
+      "properties": {
+        "webhook_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Webhook identifier to remove"
+        }
+      },
+      "required": ["webhook_id"]
+    },
+
+    "BatchResponse": {
+      "type": "object",
+      "properties": {
+        "batch_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Batch identifier"
+        },
+        "responses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TemplateExecutionResponse"
+          },
+          "description": "Individual responses"
+        },
+        "batch_metadata": {
+          "$ref": "#/definitions/BatchMetadata"
+        }
+      }
+    },
+
+    "BatchMetadata": {
+      "type": "object",
+      "properties": {
+        "total_requests": {
+          "type": "integer",
+          "description": "Total number of requests"
+        },
+        "successful_requests": {
+          "type": "integer",
+          "description": "Number of successful requests"
+        },
+        "failed_requests": {
+          "type": "integer",
+          "description": "Number of failed requests"
+        },
+        "started_at": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Batch start timestamp"
+        },
+        "completed_at": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Batch completion timestamp"
+        },
+        "total_processing_time_ms": {
+          "type": "integer",
+          "description": "Total processing time"
+        }
+      }
+    },
+
+    "WebhookConfig": {
+      "type": "object",
+      "properties": {
+        "webhook_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Webhook identifier"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Webhook URL"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Subscribed events"
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Custom headers"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        }
+      }
+    },
+
+    "WebhookDelivery": {
+      "type": "object",
+      "properties": {
+        "delivery_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Delivery identifier"
+        },
+        "webhook_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Webhook identifier"
+        },
+        "event_type": {
+          "type": "string",
+          "description": "Event type"
+        },
+        "payload": {
+          "type": "string",
+          "description": "JSON payload sent"
+        },
+        "signature": {
+          "type": "string",
+          "description": "HMAC signature"
+        },
+        "delivered_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Delivery timestamp"
+        },
+        "status_code": {
+          "type": "integer",
+          "description": "HTTP response status code"
+        },
+        "response_body": {
+          "type": "string",
+          "description": "Response body from webhook endpoint"
+        }
+      }
     }
   },
 
   "protocol": {
     "name": "Nexus WebSocket Protocol",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "transport": "WebSocket (RFC 6455)",
     "encoding": "UTF-8 JSON",
     "authentication": "JWT token in query parameter or header",

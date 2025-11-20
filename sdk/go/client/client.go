@@ -14,7 +14,8 @@ import (
 
 const (
 	// DefaultProtocolVersion версия протокола по умолчанию
-	DefaultProtocolVersion = "1.0.0"
+	// Соответствует версии Application Protocol
+	DefaultProtocolVersion = "1.1.0"
 	// DefaultClientVersion версия клиента по умолчанию
 	DefaultClientVersion = "1.0.0"
 	// DefaultTimeout таймаут по умолчанию
@@ -354,7 +355,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body interf
 }
 
 // getSchemaNameForPath возвращает имя схемы для пути (базовая реализация)
-func (c *Client) getSchemaNameForPath(path string) string {
+func (c *Client) getSchemaNameForPath(_ string) string {
 	// Можно улучшить, добавив маппинг путей к схемам
 	// Пока возвращаем пустую строку (валидация отключена по умолчанию)
 	return ""

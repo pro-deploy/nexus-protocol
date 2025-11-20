@@ -155,8 +155,8 @@ func TestExecuteTemplate_ValidationError(t *testing.T) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(`{
 			"error": {
-				"code": "VALIDATION_FAILED",
-				"type": "VALIDATION_ERROR",
+				"error_code": "VALIDATION_FAILED",
+				"error_type": "VALIDATION_ERROR",
 				"message": "Query cannot be empty",
 				"field": "query"
 			}

@@ -266,13 +266,303 @@ if result.Ranking != nil {
 }
 ```
 
+## Enterprise возможности (v1.1.0) ✨
+
+### Настройка enterprise параметров
+
+```go
+// Настройка приоритетов и кэширования
+client.SetPriority("high")                    // low, normal, high, critical
+client.SetCacheControl("cache-first")          // no-cache, cache-only, cache-first, network-first
+client.SetCacheTTL(300)                       // TTL в секундах
+client.SetRequestSource("batch")              // user, system, batch, webhook
+client.SetExperiment("enterprise-rollout")     // A/B тестирование
+client.SetFeatureFlag("advanced_analytics", "enabled")
+```
+
+### Расширенные фильтры поиска
+
+```go
+req := &types.ExecuteTemplateRequest{
+    Query: "купить смартфон с хорошей камерой",
+    Filters: &types.AdvancedFilters{
+        Domains:        []string{"commerce", "reviews"},
+        ExcludeDomains: []string{"adult"},
+        MinRelevance:   0.8,
+        MaxResults:     50,
+        SortBy:         "relevance", // relevance, date, price, rating
+        DateRange: &types.DateRange{
+            From: time.Now().AddDate(0, 0, -30).Unix(), // Последние 30 дней
+            To:   time.Now().Unix(),
+        },
+    },
+}
+```
+
+### Локализация и региональные настройки
+
+```go
+req := &types.ExecuteTemplateRequest{
+    Query: "купить ноутбук",
+    Context: &types.UserContext{
+        UserID:    "user-123",
+        TenantID:  "enterprise-company-abc",
+        Locale:    "ru-RU",              // ru-RU, en-US, etc.
+        Timezone:  "Europe/Moscow",       // IANA timezone
+        Currency:  "RUB",                 // RUB, USD, EUR
+        Region:    "RU",                  // RU, US, EU
+    },
+}
+```
+
+### Enterprise метрики в ответах
+
+```go
+result, err := client.ExecuteTemplate(ctx, req)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Проверка enterprise метрик
+if result.ResponseMetadata != nil {
+    // Rate limiting
+    if result.ResponseMetadata.RateLimitInfo != nil {
+        fmt.Printf("Rate limit: %d/%d (reset: %d)\n",
+            result.ResponseMetadata.RateLimitInfo.Remaining,
+            result.ResponseMetadata.RateLimitInfo.Limit,
+            result.ResponseMetadata.RateLimitInfo.ResetAt)
+    }
+    
+    // Кэширование
+    if result.ResponseMetadata.CacheInfo != nil {
+        fmt.Printf("Cache: %s (TTL: %ds)\n",
+            map[bool]string{true: "hit", false: "miss"}[result.ResponseMetadata.CacheInfo.CacheHit],
+            result.ResponseMetadata.CacheInfo.CacheTTL)
+    }
+    
+    // Квоты
+    if result.ResponseMetadata.QuotaInfo != nil {
+        fmt.Printf("Quota: %d/%d (%s)\n",
+            result.ResponseMetadata.QuotaInfo.QuotaUsed,
+            result.ResponseMetadata.QuotaInfo.QuotaLimit,
+            result.ResponseMetadata.QuotaInfo.QuotaType)
+    }
+}
+
+// Пагинация
+if result.Pagination != nil {
+    fmt.Printf("Page %d/%d (%d items)\n",
+        result.Pagination.Page,
+        result.Pagination.TotalPages,
+        result.Pagination.TotalItems)
+    
+    if result.Pagination.HasNext {
+        // Загрузить следующую страницу используя next_cursor
+        nextReq := &types.ExecuteTemplateRequest{
+            Query: req.Query,
+            Filters: &types.AdvancedFilters{
+                // Используйте next_cursor для следующей страницы
+            },
+        }
+    }
+}
+```
+
+### Batch операции
+
+```go
+// Создание batch запроса
+batch := client.NewBatchBuilder().
+    AddOperation("execute_template", &types.ExecuteTemplateRequest{
+        Query: "купить iPhone 15",
+        Context: &types.UserContext{TenantID: "enterprise-company-abc"},
+    }).
+    AddOperation("execute_template", &types.ExecuteTemplateRequest{
+        Query: "забронировать отель в Париже",
+        Context: &types.UserContext{TenantID: "enterprise-company-abc"},
+    }).
+    AddOperation("log_event", &types.LogEventRequest{
+        EventType: "batch_operation",
+        TenantID:  "enterprise-company-abc",
+        Data:      map[string]interface{}{"batch_size": 2},
+    }).
+    SetOptions(&types.BatchOptions{
+        Parallel:      true,  // Параллельное выполнение
+        StopOnError:   false, // Продолжать при ошибках
+        MaxConcurrency: 10,   // Максимальная параллельность
+    })
+
+// Выполнение batch
+batchResult, err := batch.Execute(ctx, client)
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Printf("Batch: %d/%d successful, %d failed\n",
+    batchResult.Successful, batchResult.Total, batchResult.Failed)
+
+// Обработка результатов
+for _, res := range batchResult.Results {
+    if res.Success {
+        fmt.Printf("Operation %d: ✅ %d ms\n", res.OperationID, res.ExecutionTimeMS)
+    } else {
+        fmt.Printf("Operation %d: ❌ %s\n", res.OperationID, res.Error.Message)
+    }
+}
+```
+
+### Webhooks для асинхронных операций
+
+```go
+// Регистрация webhook
+webhookResp, err := client.RegisterWebhook(ctx, &types.RegisterWebhookRequest{
+    Config: &types.WebhookConfig{
+        URL:    "https://my-app.company.com/webhooks/nexus",
+        Events: []string{"template.completed", "template.failed", "batch.completed"},
+        Secret: "webhook-secret-123",
+        RetryPolicy: &types.WebhookRetryPolicy{
+            MaxRetries:    3,
+            InitialDelay:  1000,  // 1 секунда
+            MaxDelay:      30000, // 30 секунд
+            BackoffFactor: 2.0,
+        },
+        Active:      true,
+        Description: "Enterprise webhook for async operations",
+    },
+})
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Printf("Webhook registered: %s\n", webhookResp.WebhookID)
+
+// Получение списка webhooks
+webhooks, err := client.ListWebhooks(ctx, &types.ListWebhooksRequest{
+    ActiveOnly: true,
+    Limit:      10,
+    Offset:     0,
+})
+if err != nil {
+    log.Fatal(err)
+}
+
+for _, wh := range webhooks.Webhooks {
+    fmt.Printf("Webhook %s: %s (%d/%d успехов/ошибок)\n",
+        wh.ID, wh.Config.URL, wh.SuccessCount, wh.ErrorCount)
+}
+
+// Тестирование webhook
+testResp, err := client.TestWebhook(ctx, &types.TestWebhookRequest{
+    WebhookID: webhookResp.WebhookID,
+    Event:     "template.completed",
+    Data:      map[string]interface{}{"test": true},
+})
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Printf("Webhook test: %s (%d ms, code %d)\n",
+    testResp.Status, testResp.ResponseTimeMS, testResp.ResponseCode)
+
+// Удаление webhook
+deleteResp, err := client.DeleteWebhook(ctx, webhookResp.WebhookID)
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Printf("Webhook deleted: %s\n", deleteResp.WebhookID)
+```
+
+### Расширенная аналитика
+
+```go
+// Получение enterprise аналитики
+stats, err := client.GetStats(ctx, &types.GetStatsRequest{
+    TenantID: "enterprise-company-abc",
+    Days:     30,
+})
+if err != nil {
+    log.Fatal(err)
+}
+
+// Метрики конверсии
+if stats.ConversionMetrics != nil {
+    fmt.Printf("Search → Result: %.1f%%\n", stats.ConversionMetrics.SearchToResult*100)
+    fmt.Printf("Result → Action: %.1f%%\n", stats.ConversionMetrics.ResultToAction*100)
+    fmt.Printf("Template Success: %.1f%%\n", stats.ConversionMetrics.TemplateSuccess*100)
+    fmt.Printf("User Retention: %.1f%%\n", stats.ConversionMetrics.UserRetention*100)
+}
+
+// Метрики производительности
+if stats.PerformanceMetrics != nil {
+    fmt.Printf("Avg Response Time: %.0f ms\n", stats.PerformanceMetrics.AvgResponseTimeMS)
+    fmt.Printf("P95 Response Time: %.0f ms\n", stats.PerformanceMetrics.P95ResponseTimeMS)
+    fmt.Printf("P99 Response Time: %.0f ms\n", stats.PerformanceMetrics.P99ResponseTimeMS)
+    fmt.Printf("Error Rate: %.2f%%\n", stats.PerformanceMetrics.ErrorRate*100)
+    fmt.Printf("Throughput: %d req/min\n", stats.PerformanceMetrics.ThroughputRPM)
+}
+
+// Разбивка по доменам
+if stats.DomainBreakdown != nil {
+    for domain, metrics := range stats.DomainBreakdown {
+        fmt.Printf("%s: %d requests, %.1f%% success, %.0f ms avg\n",
+            domain, metrics.RequestsCount, metrics.SuccessRate*100, metrics.AvgResponseTimeMS)
+    }
+}
+```
+
+### Детальный health check
+
+```go
+// Базовый health check
+health, err := client.Health(ctx)
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Printf("Health: %s (version: %s)\n", health.Status, health.Version)
+
+// Enterprise readiness check
+ready, err := client.Ready(ctx)
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Printf("Readiness: %s\n", ready.Status)
+fmt.Printf("Database: %s\n", ready.Checks.Database)
+fmt.Printf("Redis: %s\n", ready.Checks.Redis)
+fmt.Printf("AI Services: %s\n", ready.Checks.AIServices)
+
+// Детальный статус компонентов
+if ready.Components != nil {
+    for name, component := range ready.Components {
+        status := "✅"
+        if component.Status != "healthy" {
+            status = "⚠️"
+        }
+        fmt.Printf("%s %s: %s", status, name, component.Status)
+        if component.LatencyMS > 0 {
+            fmt.Printf(" (%d ms)", component.LatencyMS)
+        }
+        fmt.Println()
+    }
+}
+
+// Информация о емкости
+if ready.Capacity != nil {
+    fmt.Printf("Current Load: %.1f%%\n", ready.Capacity.CurrentLoad*100)
+    fmt.Printf("Max Capacity: %d req/sec\n", ready.Capacity.MaxCapacity)
+    fmt.Printf("Available Capacity: %d req/sec\n", ready.Capacity.AvailableCapacity)
+    fmt.Printf("Active Connections: %d\n", ready.Capacity.ActiveConnections)
+}
+```
+
 ## Проверка здоровья сервера
 
 ```go
-if err := client.Health(); err != nil {
+health, err := client.Health(ctx)
+if err != nil {
     log.Printf("Сервер недоступен: %v", err)
 } else {
-    fmt.Println("Сервер доступен")
+    fmt.Printf("Сервер доступен: %s (version: %s)\n", health.Status, health.Version)
 }
 ```
 

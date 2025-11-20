@@ -3,8 +3,8 @@ info:
   title: Nexus Protocol - HTTP REST API
   description: |
     Nexus AI Platform - Nexus Protocol
-    HTTP REST API Specification v1.0.0
-  version: 1.0.0
+    HTTP REST API Specification v1.1.0
+  version: 1.1.0
   contact:
     name: Биркин Максим
     email: contact@nexus.dev
@@ -608,6 +608,189 @@ paths:
                   data:
                     $ref: '#/components/schemas/AnalyticsStats'
 
+  # Enterprise Batch Operations v1.1.0
+  /batch/execute:
+    post:
+      summary: Execute batch operations
+      description: Execute multiple template operations in a single request
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - requests
+              properties:
+                requests:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ExecuteTemplateRequest'
+                  minItems: 1
+                  maxItems: 100
+                batch_options:
+                  $ref: '#/components/schemas/ExecuteOptions'
+                metadata:
+                  $ref: '#/components/schemas/RequestMetadata'
+      responses:
+        '200':
+          description: Batch executed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BatchResponse'
+                  metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+
+  /batch/{batchId}/status:
+    get:
+      summary: Get batch execution status
+      description: Get the status of a batch execution
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Batch execution ID
+      responses:
+        '200':
+          description: Batch status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BatchResponse'
+                  metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+
+  # Enterprise Webhook Management v1.1.0
+  /webhooks:
+    post:
+      summary: Register webhook
+      description: Register a new webhook for event notifications
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+                - events
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  example: "https://api.company.com/webhooks/nexus"
+                events:
+                  type: array
+                  items:
+                    type: string
+                    enum: [template_executed, batch_completed, error_occurred]
+                  example: ["template_executed", "batch_completed"]
+                headers:
+                  type: object
+                  additionalProperties:
+                    type: string
+                secret:
+                  type: string
+                  minLength: 16
+                  description: Secret for webhook signature verification
+      responses:
+        '201':
+          description: Webhook registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/WebhookConfig'
+                  metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+    get:
+      summary: List webhooks
+      description: Get list of registered webhooks
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Webhooks retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WebhookConfig'
+
+  /webhooks/{webhookId}:
+    delete:
+      summary: Unregister webhook
+      description: Remove a webhook registration
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: webhookId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Webhook ID
+      responses:
+        '204':
+          description: Webhook unregistered
+
+  /webhooks/{webhookId}/deliveries:
+    get:
+      summary: Get webhook deliveries
+      description: Get delivery history for a webhook
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: webhookId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Webhook ID
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Deliveries retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WebhookDelivery'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -633,7 +816,7 @@ components:
           example: "1.0.0"
         protocol_version:
           type: string
-          example: "1.0.0"
+          example: "1.1.0"
         client_id:
           type: string
           example: "web-app"
@@ -658,16 +841,23 @@ components:
           format: uuid
         server_version:
           type: string
-          example: "1.0.0"
+          example: "1.1.0"
         protocol_version:
           type: string
-          example: "1.0.0"
+          example: "1.1.0"
         timestamp:
           type: integer
           format: int64
         processing_time_ms:
           type: integer
           example: 150
+        # Enterprise features v1.1.0
+        rate_limit_info:
+          $ref: '#/components/schemas/RateLimitInfo'
+        cache_info:
+          $ref: '#/components/schemas/CacheInfo'
+        quota_info:
+          $ref: '#/components/schemas/QuotaInfo'
 
     ErrorResponse:
       type: object
@@ -1089,6 +1279,128 @@ components:
                 type: integer
               total_events:
                 type: integer
+
+    # Enterprise Features v1.1.0
+    RateLimitInfo:
+      type: object
+      properties:
+        requests_remaining:
+          type: integer
+          description: Remaining requests in current window
+        reset_time_seconds:
+          type: integer
+          description: Seconds until limit reset
+        limit_type:
+          type: string
+          enum: [per_user, per_tenant, global]
+          description: Type of rate limit
+
+    CacheInfo:
+      type: object
+      properties:
+        cache_hit:
+          type: boolean
+          description: Whether result was served from cache
+        cache_key:
+          type: string
+          description: Cache key used
+        ttl_remaining_seconds:
+          type: integer
+          description: Remaining TTL in seconds
+
+    QuotaInfo:
+      type: object
+      properties:
+        daily_requests_used:
+          type: integer
+          description: Requests used today
+        daily_requests_limit:
+          type: integer
+          description: Daily request limit
+        monthly_requests_used:
+          type: integer
+          description: Requests used this month
+        monthly_requests_limit:
+          type: integer
+          description: Monthly request limit
+
+    BatchResponse:
+      type: object
+      properties:
+        batch_id:
+          type: string
+          format: uuid
+        responses:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExecuteTemplateResponse'
+        batch_metadata:
+          $ref: '#/components/schemas/BatchMetadata'
+
+    BatchMetadata:
+      type: object
+      properties:
+        total_requests:
+          type: integer
+        successful_requests:
+          type: integer
+        failed_requests:
+          type: integer
+        started_at:
+          type: integer
+          format: int64
+        completed_at:
+          type: integer
+          format: int64
+        total_processing_time_ms:
+          type: integer
+
+    WebhookConfig:
+      type: object
+      properties:
+        webhook_id:
+          type: string
+          format: uuid
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+            enum: [template_executed, batch_completed, error_occurred]
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        secret:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    WebhookDelivery:
+      type: object
+      properties:
+        delivery_id:
+          type: string
+          format: uuid
+        webhook_id:
+          type: string
+          format: uuid
+        event_type:
+          type: string
+        payload:
+          type: string
+        signature:
+          type: string
+        delivered_at:
+          type: string
+          format: date-time
+        status_code:
+          type: integer
+        response_body:
+          type: string
 
   responses:
     ValidationError:

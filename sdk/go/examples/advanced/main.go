@@ -11,13 +11,13 @@ import (
 )
 
 func main() {
-	// Конфигурация для enterprise клиента
+	// Конфигурация для расширенных возможностей (v1.1.0)
 	cfg := nexus.Config{
 		BaseURL:         "http://localhost:8080",
-		Token:           "enterprise-jwt-token",
-		ProtocolVersion: "1.1.0", // Используем новую версию с enterprise фичами
+		Token:           "jwt-token",
+		ProtocolVersion: "1.1.0", // Включаем расширенные возможности
 		ClientVersion:   "2.0.0",
-		ClientID:        "enterprise-app",
+		ClientID:        "advanced-app",
 		ClientType:      "api",
 		RetryConfig: &nexus.RetryConfig{
 			MaxRetries:        5,
@@ -30,7 +30,7 @@ func main() {
 	client := nexus.NewClient(cfg)
 	ctx := context.Background()
 
-	fmt.Println("🚀 Nexus Protocol Enterprise Demo")
+	fmt.Println("🚀 Nexus Protocol Advanced Features Demo (v1.1.0)")
 	fmt.Println("=================================")
 
 	// 1. Настройка enterprise параметров
@@ -299,7 +299,7 @@ func demonstrateAnalytics(ctx context.Context, client *nexus.Client) {
 	}
 
 	// Показываем разбивку по доменам
-	if stats.DomainBreakdown != nil && len(stats.DomainBreakdown) > 0 {
+	if len(stats.DomainBreakdown) > 0 {
 		fmt.Println("   - Разбивка по доменам:")
 		for domain, metrics := range stats.DomainBreakdown {
 			fmt.Printf("     * %s: %d запросов, %.1f%% успех, %.0f ms среднее\n",
@@ -336,7 +336,7 @@ func demonstrateHealthCheck(ctx context.Context, client *nexus.Client) {
 	fmt.Printf("   - AI Services: %s\n", ready.Checks.AIServices)
 
 	// Показываем детальную информацию о компонентах
-	if ready.Components != nil && len(ready.Components) > 0 {
+	if len(ready.Components) > 0 {
 		fmt.Println("   - Детальный статус компонентов:")
 		for name, component := range ready.Components {
 			status := "✅"

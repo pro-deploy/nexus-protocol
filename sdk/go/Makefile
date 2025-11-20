@@ -100,6 +100,21 @@ run-metrics:
 	@echo "$(GREEN)Запуск примера Metrics...$(NC)"
 	$(GO) run ./examples/metrics
 
+# Запуск Enterprise примера
+run-advanced:
+	@echo "$(GREEN)Запуск Enterprise примера...$(NC)"
+	$(GO) run ./examples/advanced
+
+# Запуск Enterprise Batch Operations примера
+run-advanced-batch:
+	@echo "$(GREEN)Запуск Enterprise Batch Operations примера...$(NC)"
+	$(GO) run ./examples/advanced/batch
+
+# Запуск Enterprise Webhooks примера
+run-advanced-webhooks:
+	@echo "$(GREEN)Запуск Enterprise Webhooks примера...$(NC)"
+	$(GO) run ./examples/advanced/webhooks
+
 # Очистка
 clean:
 	@echo "$(GREEN)Очистка...$(NC)"

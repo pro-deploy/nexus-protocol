@@ -9,6 +9,14 @@ import (
 )
 
 // ExecuteTemplate выполняет контекстно-зависимый шаблон.
+//
+// Application Protocol: Запрос отправляется с автоматически добавленными метаданными
+// в формате RequestMetadata. Ответ приходит в формате Application Protocol:
+// {
+//   "metadata": { ... ResponseMetadata ... },
+//   "data": { ... ExecuteTemplateResponse ... }
+// }
+//
 // Если метаданные не указаны в запросе, они создаются автоматически.
 // Язык по умолчанию: "ru", если не указан.
 //

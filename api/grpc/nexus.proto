@@ -1,7 +1,7 @@
 // Nexus AI Platform - Context-Aware Templates
 // gRPC API для Nexus системы
 // Автор: Биркин Максим
-// Версия протокола: 1.0.0
+// Версия протокола: 1.1.0
 
 syntax = "proto3";
 
@@ -40,6 +40,11 @@ message ResponseMetadata {
   string version = 3;                  // Версия протокола
   int64 timestamp = 4;                 // Unix timestamp ответа
   int32 processing_time_ms = 5;        // Время обработки в миллисекундах
+
+  // Enterprise features v1.1.0
+  RateLimitInfo rate_limit_info = 6;   // Информация о rate limiting
+  CacheInfo cache_info = 7;            // Информация о кэшировании
+  QuotaInfo quota_info = 8;            // Информация о квотах
 }
 
 // ErrorDetail детальная информация об ошибке (для gRPC Status)
@@ -134,6 +139,68 @@ message ExecuteOptions {
   bool include_web_search = 4;
 }
 
+// Enterprise features v1.1.0 - Monitoring & Metrics
+message RateLimitInfo {
+  int32 requests_remaining = 1;        // Оставшиеся запросы в окне
+  int32 reset_time_seconds = 2;        // Время до сброса лимита
+  string limit_type = 3;               // Тип лимита (per_user, per_tenant, global)
+}
+
+message CacheInfo {
+  bool cache_hit = 1;                  // Было ли попадание в кэш
+  string cache_key = 2;                // Ключ кэширования
+  int32 ttl_remaining_seconds = 3;     // Оставшееся время жизни кэша
+}
+
+message QuotaInfo {
+  int32 daily_requests_used = 1;       // Использовано запросов за день
+  int32 daily_requests_limit = 2;      // Лимит запросов в день
+  int32 monthly_requests_used = 3;     // Использовано запросов за месяц
+  int32 monthly_requests_limit = 4;    // Лимит запросов в месяц
+}
+
+// Batch Operations v1.1.0
+message BatchRequest {
+  string batch_id = 1;                 // Уникальный ID батча
+  repeated ExecuteTemplateRequest requests = 2; // Запросы в батче
+  ExecuteOptions batch_options = 3;    // Общие опции для батча
+  RequestMetadata metadata = 4;        // Метаданные запроса
+}
+
+message BatchResponse {
+  string batch_id = 1;                 // ID батча
+  repeated ExecuteTemplateResponse responses = 2; // Ответы
+  BatchMetadata batch_metadata = 3;    // Метаданные батча
+  ResponseMetadata response_metadata = 4; // Метаданные ответа
+}
+
+message BatchMetadata {
+  int32 total_requests = 1;            // Общее количество запросов
+  int32 successful_requests = 2;       // Успешные запросы
+  int32 failed_requests = 3;           // Неудачные запросы
+  int64 started_at = 4;                // Время начала
+  int64 completed_at = 5;              // Время завершения
+  int32 total_processing_time_ms = 6;  // Общее время обработки
+}
+
+// Webhook Integration v1.1.0
+message WebhookConfig {
+  string url = 1;                      // Webhook URL
+  repeated string events = 2;          // События для отправки
+  map<string, string> headers = 3;     // Дополнительные заголовки
+  string secret = 4;                   // Secret для подписи
+}
+
+message WebhookDelivery {
+  string webhook_id = 1;               // ID webhook'а
+  string event_type = 2;               // Тип события
+  string payload = 3;                  // JSON payload
+  string signature = 4;                // HMAC подпись
+  int64 delivered_at = 5;              // Время доставки
+  int32 status_code = 6;               // HTTP статус код ответа
+  string response_body = 7;            // Тело ответа
+}
+
 // ============================================================================
 // Context-Aware Templates Service
 // ============================================================================
@@ -179,6 +246,31 @@ service ContextAwareTemplates {
   rpc ExecuteTemplate(ExecuteTemplateRequest) returns (ExecuteTemplateResponse);
   rpc GetExecutionStatus(GetExecutionStatusRequest) returns (ExecuteTemplateResponse);
   rpc StreamTemplateResults(StreamTemplateRequest) returns (stream TemplateResult);
+}
+
+// Enterprise Batch Operations Service v1.1.0
+service BatchOperations {
+  rpc ExecuteBatch(BatchRequest) returns (BatchResponse);
+  rpc GetBatchStatus(GetExecutionStatusRequest) returns (BatchResponse);
+}
+
+// Enterprise Webhook Service v1.1.0
+service WebhookService {
+  rpc RegisterWebhook(WebhookConfig) returns (WebhookConfig);
+  rpc UnregisterWebhook(WebhookConfig) returns (Empty);
+  rpc ListWebhooks(Empty) returns (WebhookList);
+  rpc GetWebhookDeliveries(WebhookConfig) returns (WebhookDeliveryList);
+}
+
+message Empty {}
+
+message WebhookList {
+  repeated WebhookConfig webhooks = 1;
+}
+
+message WebhookDeliveryList {
+  string webhook_id = 1;
+  repeated WebhookDelivery deliveries = 2;
 }
 
 // ============================================================================
