@@ -2,39 +2,41 @@ package types
 
 // ExecuteTemplateRequest представляет запрос на выполнение шаблона
 type ExecuteTemplateRequest struct {
-	Query    string                 `json:"query"`
-	Language string                 `json:"language,omitempty"`
-	Context  *UserContext            `json:"context,omitempty"`
-	Options  *ExecuteOptions         `json:"options,omitempty"`
-	Filters  *AdvancedFilters       `json:"filters,omitempty"`  // расширенные фильтры
-	Metadata *RequestMetadata        `json:"metadata,omitempty"`
+	Query    string           `json:"query"`
+	Language string           `json:"language,omitempty"`
+	Context  *UserContext     `json:"context,omitempty"`
+	Options  *ExecuteOptions  `json:"options,omitempty"`
+	Filters  *AdvancedFilters `json:"filters,omitempty"` // расширенные фильтры
+	Metadata *RequestMetadata `json:"metadata,omitempty"`
 }
 
 // ExecuteTemplateResponse представляет ответ на выполнение шаблона
 type ExecuteTemplateResponse struct {
-	ExecutionID      string            `json:"execution_id"`
-	IntentID         string            `json:"intent_id,omitempty"`
-	Status           string            `json:"status"`
-	QueryType        string            `json:"query_type,omitempty"`
-	Sections         []DomainSection   `json:"sections,omitempty"`
-	WebSearch        *WebSearchResult  `json:"web_search,omitempty"`
-	Ranking          *RankingResult    `json:"ranking,omitempty"`
-	Metadata         *ExecutionMetadata `json:"metadata,omitempty"`
-	ProcessingTimeMS int32             `json:"processing_time_ms"`
-	ResponseMetadata *ResponseMetadata  `json:"response_metadata,omitempty"`
-	Pagination       *PaginationInfo   `json:"pagination,omitempty"` // информация о пагинации
+	ExecutionID      string                `json:"execution_id"`
+	IntentID         string                `json:"intent_id,omitempty"`
+	Status           string                `json:"status"`
+	QueryType        string                `json:"query_type,omitempty"`
+	Sections         []DomainSection       `json:"sections,omitempty"`
+	WebSearch        *WebSearchResult      `json:"web_search,omitempty"`
+	Ranking          *RankingResult        `json:"ranking,omitempty"`
+	Metadata         *ExecutionMetadata    `json:"metadata,omitempty"`
+	ProcessingTimeMS int32                 `json:"processing_time_ms"`
+	ResponseMetadata *ResponseMetadata     `json:"response_metadata,omitempty"`
+	Pagination       *PaginationInfo       `json:"pagination,omitempty"`      // информация о пагинации
+	Workflow         *Workflow             `json:"workflow,omitempty"`        // workflow для многошаговых сценариев
+	DomainAnalysis   *DomainAnalysisResult `json:"domain_analysis,omitempty"` // анализ выбора доменов
 }
 
 // UserContext содержит контекст пользователя
 type UserContext struct {
-	UserID    string       `json:"user_id,omitempty"`
-	SessionID string       `json:"session_id,omitempty"`
-	TenantID  string       `json:"tenant_id,omitempty"`
+	UserID    string        `json:"user_id,omitempty"`
+	SessionID string        `json:"session_id,omitempty"`
+	TenantID  string        `json:"tenant_id,omitempty"`
 	Location  *UserLocation `json:"location,omitempty"`
-	Locale    string       `json:"locale,omitempty"`    // локаль пользователя (ru-RU, en-US)
-	Timezone  string       `json:"timezone,omitempty"`  // часовой пояс (Europe/Moscow)
-	Currency  string       `json:"currency,omitempty"`  // валюта (RUB, USD, EUR)
-	Region    string       `json:"region,omitempty"`    // регион (RU, US, EU)
+	Locale    string        `json:"locale,omitempty"`   // локаль пользователя (ru-RU, en-US)
+	Timezone  string        `json:"timezone,omitempty"` // часовой пояс (Europe/Moscow)
+	Currency  string        `json:"currency,omitempty"` // валюта (RUB, USD, EUR)
+	Region    string        `json:"region,omitempty"`   // регион (RU, US, EU)
 }
 
 // UserLocation содержит информацию о местоположении
@@ -46,14 +48,14 @@ type UserLocation struct {
 
 // PaginationInfo содержит информацию о пагинации
 type PaginationInfo struct {
-	Page         int32  `json:"page,omitempty"`          // текущая страница (1-based)
-	PageSize     int32  `json:"page_size,omitempty"`     // размер страницы
-	TotalPages   int32  `json:"total_pages,omitempty"`   // всего страниц
-	TotalItems   int64  `json:"total_items,omitempty"`   // всего элементов
-	HasNext      bool   `json:"has_next,omitempty"`      // есть ли следующая страница
-	HasPrevious  bool   `json:"has_previous,omitempty"`  // есть ли предыдущая страница
-	NextCursor   string `json:"next_cursor,omitempty"`   // курсор для следующей страницы
-	PrevCursor   string `json:"prev_cursor,omitempty"`   // курсор для предыдущей страницы
+	Page        int32  `json:"page,omitempty"`         // текущая страница (1-based)
+	PageSize    int32  `json:"page_size,omitempty"`    // размер страницы
+	TotalPages  int32  `json:"total_pages,omitempty"`  // всего страниц
+	TotalItems  int64  `json:"total_items,omitempty"`  // всего элементов
+	HasNext     bool   `json:"has_next,omitempty"`     // есть ли следующая страница
+	HasPrevious bool   `json:"has_previous,omitempty"` // есть ли предыдущая страница
+	NextCursor  string `json:"next_cursor,omitempty"`  // курсор для следующей страницы
+	PrevCursor  string `json:"prev_cursor,omitempty"`  // курсор для предыдущей страницы
 }
 
 // ExecuteOptions содержит опции выполнения
@@ -66,12 +68,12 @@ type ExecuteOptions struct {
 
 // AdvancedFilters содержит расширенные фильтры результатов
 type AdvancedFilters struct {
-	Domains         []string `json:"domains,omitempty"`         // список доменов для включения
-	ExcludeDomains  []string `json:"exclude_domains,omitempty"` // список доменов для исключения
-	MinRelevance    float32  `json:"min_relevance,omitempty"`   // минимальная релевантность (0-1)
-	MaxResults      int32    `json:"max_results,omitempty"`     // максимальное количество результатов
-	SortBy          string   `json:"sort_by,omitempty"`         // сортировка: relevance, date, price
-	DateRange       *DateRange `json:"date_range,omitempty"`      // диапазон дат
+	Domains        []string   `json:"domains,omitempty"`         // список доменов для включения
+	ExcludeDomains []string   `json:"exclude_domains,omitempty"` // список доменов для исключения
+	MinRelevance   float32    `json:"min_relevance,omitempty"`   // минимальная релевантность (0-1)
+	MaxResults     int32      `json:"max_results,omitempty"`     // максимальное количество результатов
+	SortBy         string     `json:"sort_by,omitempty"`         // сортировка: relevance, date, price
+	DateRange      *DateRange `json:"date_range,omitempty"`      // диапазон дат
 }
 
 // DateRange содержит диапазон дат
@@ -82,24 +84,24 @@ type DateRange struct {
 
 // DomainSection представляет секцию результатов домена
 type DomainSection struct {
-	DomainID      string       `json:"domain_id"`
-	Title         string       `json:"title,omitempty"`
-	Status        string       `json:"status"`
-	Error         string       `json:"error,omitempty"`
+	DomainID       string       `json:"domain_id"`
+	Title          string       `json:"title,omitempty"`
+	Status         string       `json:"status"`
+	Error          string       `json:"error,omitempty"`
 	ResponseTimeMS int32        `json:"response_time_ms,omitempty"`
-	Results       []ResultItem  `json:"results,omitempty"`
+	Results        []ResultItem `json:"results,omitempty"`
 }
 
 // ResultItem представляет элемент результата
 type ResultItem struct {
-	ID          string            `json:"id"`
-	Type        string            `json:"type"`
-	Title       string            `json:"title"`
-	Description string            `json:"description,omitempty"`
-	Data        map[string]string `json:"data,omitempty"`
-	Relevance   float32           `json:"relevance"`
-	Confidence  float32           `json:"confidence"`
-	Actions     []Action          `json:"actions,omitempty"`
+	ID          string                 `json:"id"`
+	Type        string                 `json:"type"`
+	Title       string                 `json:"title"`
+	Description string                 `json:"description,omitempty"`
+	Data        map[string]interface{} `json:"data,omitempty"` // изменено на interface{} для поддержки сложных структур (stores, addresses и т.д.)
+	Relevance   float32                `json:"relevance"`
+	Confidence  float32                `json:"confidence"`
+	Actions     []Action               `json:"actions,omitempty"`
 }
 
 // Action представляет действие, доступное для результата
@@ -149,3 +151,76 @@ type ExecutionMetadata struct {
 	ResultsCount    int32            `json:"results_count,omitempty"`
 }
 
+// Workflow представляет многошаговый сценарий с зависимостями между шагами
+type Workflow struct {
+	Steps []WorkflowStep `json:"steps,omitempty"`
+}
+
+// WorkflowStep представляет один шаг в workflow
+type WorkflowStep struct {
+	Step      int32    `json:"step"`                 // номер шага (1-based)
+	Action    string   `json:"action"`               // тип действия (order_food, process_payment и т.д.)
+	Domain    string   `json:"domain"`               // домен (commerce, payment, delivery, notifications)
+	Status    string   `json:"status"`               // статус: pending, in_progress, completed, failed
+	ResultID  string   `json:"result_id,omitempty"`  // ID результата этого шага
+	DependsOn []string `json:"depends_on,omitempty"` // список ID результатов, от которых зависит этот шаг
+}
+
+// DomainAnalysisResult содержит анализ выбора доменов
+type DomainAnalysisResult struct {
+	SelectedDomains   []DomainSelection `json:"selected_domains,omitempty"`
+	RejectedDomains   []DomainSelection `json:"rejected_domains,omitempty"`
+	Confidence        float32           `json:"confidence"`
+	AnalysisAlgorithm string            `json:"analysis_algorithm,omitempty"`
+}
+
+// DomainSelection представляет выбор домена с анализом
+type DomainSelection struct {
+	DomainID     string             `json:"domain_id"`
+	Name         string             `json:"name"`
+	Type         string             `json:"type"`
+	Confidence   float32            `json:"confidence"`
+	Relevance    float32            `json:"relevance"`
+	Reason       string             `json:"reason,omitempty"`
+	Priority     int32              `json:"priority"`
+	Metadata     map[string]string  `json:"metadata,omitempty"`
+	Capabilities []DomainCapability `json:"capabilities,omitempty"`
+}
+
+// DomainCapability описывает возможности домена
+type DomainCapability struct {
+	Type        string            `json:"type"`
+	Description string            `json:"description"`
+	Parameters  map[string]string `json:"parameters,omitempty"`
+}
+
+// ResponseQualityAnalysis содержит анализ качества ответа домена
+type ResponseQualityAnalysis struct {
+	DomainID          string            `json:"domain_id"`
+	OverallQuality    float32           `json:"overall_quality"`
+	RelevanceScore    float32           `json:"relevance_score"`
+	CompletenessScore float32           `json:"completeness_score"`
+	AccuracyScore     float32           `json:"accuracy_score"`
+	HelpfulnessScore  float32           `json:"helpfulness_score"`
+	Issues            []QualityIssue    `json:"issues,omitempty"`
+	Suggestions       []string          `json:"suggestions,omitempty"`
+	Metadata          map[string]string `json:"metadata,omitempty"`
+}
+
+// QualityIssue описывает проблему с качеством ответа
+type QualityIssue struct {
+	Type        string `json:"type"`
+	Severity    string `json:"severity"`
+	Description string `json:"description"`
+	Suggestion  string `json:"suggestion,omitempty"`
+}
+
+// DomainRoutingDecision содержит решение о маршрутизации запроса
+type DomainRoutingDecision struct {
+	DomainID     string            `json:"domain_id"`
+	Action       string            `json:"action"`
+	Priority     int32             `json:"priority"`
+	Reason       string            `json:"reason"`
+	Alternatives []string          `json:"alternatives,omitempty"`
+	Metadata     map[string]string `json:"metadata,omitempty"`
+}

@@ -1,4 +1,4 @@
-# Nexus Application Protocol v1.1.0 ✨
+# Nexus Application Protocol v2.0.0 ✨
 
 **Nexus Protocol** - Application Protocol для обмена данными между клиентами и серверами Nexus AI Platform.
 
@@ -6,7 +6,7 @@
 
 **Nexus Protocol теперь поддерживает enterprise-сценарии среднего и крупного бизнеса!**
 
-### ✨ Новые возможности в v1.1.0
+### ✨ Новые возможности в v2.0.0
 - **Multi-tenant архитектура** с полной изоляцией данных
 - **Batch операции** для высокой производительности
 - **Enterprise метрики** (rate limiting, кэширование, квоты)
@@ -77,8 +77,8 @@ Nexus Protocol определяет:
 {
   "metadata": {
     "request_id": "550e8400-e29b-41d4-a716-446655440000",
-    "protocol_version": "1.0.0",
-    "client_version": "1.0.0",
+    "protocol_version": "2.0.0",
+    "client_version": "2.0.0",
     "client_id": "web-app",
     "client_type": "web",
     "timestamp": 1640995200
@@ -91,17 +91,99 @@ Nexus Protocol определяет:
 
 ### HTTP REST
 
+#### Пример 1: Информационный запрос
 ```bash
 curl -X POST https://api.nexus.dev/api/v1/templates/execute \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <jwt_token>" \
   -d '{
     "query": "хочу борщ",
+    "language": "ru",
     "metadata": {
       "request_id": "req-123",
-      "protocol_version": "1.0.0"
+      "protocol_version": "2.0.0"
     }
   }'
+```
+
+#### Пример 2: Запрос с покупкой и геолокацией
+```bash
+curl -X POST https://api.nexus.dev/api/v1/templates/execute \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <jwt_token>" \
+  -d '{
+    "query": "Найди где рядом продается кокакола и купи литровую бутылку колы заберу самостоятельно",
+    "language": "ru",
+    "context": {
+      "user_id": "user-123",
+      "location": {
+        "latitude": 55.7558,
+        "longitude": 37.6173,
+        "accuracy": 50
+      },
+      "locale": "ru-RU",
+      "currency": "RUB",
+      "region": "RU"
+    },
+    "metadata": {
+      "request_id": "req-456",
+      "protocol_version": "2.0.0",
+      "client_version": "1.0.0"
+    }
+  }'
+```
+
+**Ответ:**
+```json
+{
+  "data": {
+    "execution_id": "exec-789",
+    "status": "completed",
+    "query_type": "with_purchases_services",
+    "sections": [
+      {
+        "domain_id": "commerce",
+        "title": "Коммерческие предложения",
+        "status": "success",
+        "results": [
+          {
+            "id": "product-456",
+            "type": "product_purchase",
+            "title": "Coca-Cola 1л бутылка",
+            "description": "Найдено в 3 магазинах рядом",
+            "data": {
+              "price": "89 ₽",
+              "stores": [
+                {
+                  "name": "Пятерочка",
+                  "distance": "200м",
+                  "address": "ул. Ленина, 15",
+                  "pickup_available": true,
+                  "work_hours": "Круглосуточно"
+                }
+              ]
+            },
+            "relevance": 0.95,
+            "actions": [
+              {
+                "type": "purchase",
+                "label": "Купить сейчас",
+                "method": "POST",
+                "url": "/api/v1/commerce/purchase"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "request_id": "req-456",
+    "protocol_version": "1.1.0",
+    "server_version": "2.0.0",
+    "processing_time_ms": 245
+  }
+}
 ```
 
 ### gRPC
@@ -135,6 +217,37 @@ ws.onopen = () => {
   }));
 };
 ```
+
+## 🎯 Примеры использования
+
+### Простой информационный запрос
+```bash
+curl -X POST https://api.nexus.dev/api/v1/templates/execute \
+  -H "Authorization: Bearer <token>" \
+  -d '{"query": "хочу борщ", "language": "ru"}'
+```
+
+### Комплексный многошаговый сценарий
+```bash
+curl -X POST https://api.nexus.dev/api/v1/templates/execute \
+  -H "Authorization: Bearer <token>" \
+  -d '{
+    "query": "закажи в макдоналдсе карточку фри, оплати, введи адрес доставки, и напоминай когда курьер выедет с заказом выпить таблетки, и через два часа выпить еще одни таблетки",
+    "language": "ru",
+    "context": {
+      "user_id": "user-123",
+      "location": {"latitude": 55.7558, "longitude": 37.6173}
+    }
+  }'
+```
+
+Система автоматически:
+- ✅ Определяет несколько доменов (commerce, payment, delivery, notifications)
+- ✅ Создает workflow с зависимостями между шагами
+- ✅ Обрабатывает последовательность действий
+- ✅ Создает напоминания с правильными триггерами
+
+[📖 Подробные примеры →](./PURCHASE_EXAMPLES.md)
 
 ## Основные компоненты протокола
 
@@ -181,6 +294,40 @@ ws.onopen = () => {
 - Миграция между версиями
 
 [Подробнее →](./versioning/README.md)
+
+## 🎨 Frontend Configuration
+
+Клиенты могут получать активную конфигурацию визуала (тема, цвета, layout, брендинг) через публичный endpoint:
+
+```bash
+GET /api/v1/frontend/config
+```
+
+**Пример ответа:**
+```json
+{
+  "data": {
+    "id": "frontend-config-001",
+    "name": "Corporate Theme",
+    "theme": "light",
+    "colors": {
+      "primary": "#0066CC",
+      "secondary": "#00CC66",
+      "accent": "#FF6600"
+    },
+    "branding": {
+      "logo": "https://cdn.example.com/logo.png",
+      "name": "Nexus Protocol"
+    }
+  }
+}
+```
+
+**Использование в SDK:**
+```go
+config, err := client.GetFrontendConfig(ctx)
+// Применить конфигурацию в UI
+```
 
 ## Транспорты
 

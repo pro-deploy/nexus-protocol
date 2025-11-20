@@ -29,5 +29,6 @@ const (
 	// Analytics endpoints
 	PathAPIV1AnalyticsEvents = "/api/v1/analytics/events"
 	PathAPIV1AnalyticsStats  = "/api/v1/analytics/stats"
+	PathAPIV1FrontendConfig  = "/api/v1/frontend/config"
 )
 

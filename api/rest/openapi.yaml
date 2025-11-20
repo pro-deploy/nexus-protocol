@@ -3,8 +3,8 @@ info:
   title: Nexus Protocol - HTTP REST API
   description: |
     Nexus AI Platform - Nexus Protocol
-    HTTP REST API Specification v1.1.0
-  version: 1.1.0
+    HTTP REST API Specification v2.0.0
+  version: 2.0.0
   contact:
     name: Биркин Максим
     email: contact@nexus.dev
@@ -757,6 +757,32 @@ paths:
         '204':
           description: Webhook unregistered
 
+  # Frontend Configuration (Public)
+  /frontend/config:
+    get:
+      summary: Get active frontend configuration
+      description: |
+        Returns the active frontend configuration including theme, colors, layout, and branding.
+        This is a public endpoint that does not require authentication.
+      tags:
+        - Frontend
+      responses:
+        '200':
+          description: Frontend configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/FrontendConfig'
+                  metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
   /webhooks/{webhookId}/deliveries:
     get:
       summary: Get webhook deliveries
@@ -790,6 +816,1083 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/WebhookDelivery'
+
+  # Admin Panel Endpoints (Superuser only)
+  /admin/ai/config:
+    get:
+      summary: Get AI configuration
+      description: Retrieve current AI provider and model configuration
+      tags:
+        - Admin
+        - AI
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: AI configuration retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AIConfig'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      summary: Update AI configuration
+      description: Update AI provider and model configuration
+      tags:
+        - Admin
+        - AI
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIConfig'
+      responses:
+        '200':
+          description: AI configuration updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "AI configuration updated successfully"
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /admin/prompts:
+    get:
+      summary: List prompts
+      description: Get list of prompts, optionally filtered by domain
+      tags:
+        - Admin
+        - Prompts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: domain
+          in: query
+          schema:
+            type: string
+            enum: [commerce, recipes, travel, knowledge, health, finance]
+          description: Filter by domain
+        - name: active
+          in: query
+          schema:
+            type: boolean
+          description: Filter by active status
+      responses:
+        '200':
+          description: Prompts retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PromptConfig'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      summary: Create prompt
+      description: Create a new prompt configuration
+      tags:
+        - Admin
+        - Prompts
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromptConfig'
+      responses:
+        '201':
+          description: Prompt created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PromptConfig'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /admin/prompts/{id}:
+    get:
+      summary: Get prompt
+      description: Get a specific prompt by ID
+      tags:
+        - Admin
+        - Prompts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Prompt ID
+      responses:
+        '200':
+          description: Prompt retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PromptConfig'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      summary: Update prompt
+      description: Update a prompt configuration
+      tags:
+        - Admin
+        - Prompts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Prompt ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromptConfig'
+      responses:
+        '200':
+          description: Prompt updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PromptConfig'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      summary: Delete prompt
+      description: Delete a prompt configuration
+      tags:
+        - Admin
+        - Prompts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Prompt ID
+      responses:
+        '204':
+          description: Prompt deleted
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /admin/domains:
+    get:
+      summary: List domains
+      description: Get list of all domain configurations
+      tags:
+        - Admin
+        - Domains
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Domains retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DomainConfig'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      summary: Create domain
+      description: Create a new domain configuration
+      tags:
+        - Admin
+        - Domains
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DomainConfig'
+      responses:
+        '201':
+          description: Domain created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/DomainConfig'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /admin/domains/{id}:
+    get:
+      summary: Get domain
+      description: Get a specific domain configuration
+      tags:
+        - Admin
+        - Domains
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Domain ID
+      responses:
+        '200':
+          description: Domain retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/DomainConfig'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      summary: Update domain
+      description: Update a domain configuration
+      tags:
+        - Admin
+        - Domains
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Domain ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DomainConfig'
+      responses:
+        '200':
+          description: Domain updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/DomainConfig'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      summary: Delete domain
+      description: Delete a domain configuration
+      tags:
+        - Admin
+        - Domains
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Domain ID
+      responses:
+        '204':
+          description: Domain deleted
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /admin/domains/{id}/keywords:
+    get:
+      summary: Get domain keywords
+      description: Get keywords for a specific domain
+      tags:
+        - Admin
+        - Domains
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Domain ID
+      responses:
+        '200':
+          description: Keywords retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: string
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      summary: Update domain keywords
+      description: Update keywords for a domain
+      tags:
+        - Admin
+        - Domains
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Domain ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+      responses:
+        '200':
+          description: Keywords updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Domain keywords updated successfully"
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /admin/domains/{id}/capabilities:
+    get:
+      summary: Get domain capabilities
+      description: Get capabilities for a specific domain
+      tags:
+        - Admin
+        - Domains
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Domain ID
+      responses:
+        '200':
+          description: Capabilities retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DomainCapability'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      summary: Update domain capabilities
+      description: Update capabilities for a domain
+      tags:
+        - Admin
+        - Domains
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Domain ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/DomainCapability'
+      responses:
+        '200':
+          description: Capabilities updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Domain capabilities updated successfully"
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /admin/domains/{id}/quality-rules:
+    get:
+      summary: Get domain quality rules
+      description: Get quality rules for a specific domain
+      tags:
+        - Admin
+        - Domains
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Domain ID
+      responses:
+        '200':
+          description: Quality rules retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/QualityRule'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      summary: Update domain quality rules
+      description: Update quality rules for a domain
+      tags:
+        - Admin
+        - Domains
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Domain ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/QualityRule'
+      responses:
+        '200':
+          description: Quality rules updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Domain quality rules updated successfully"
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /admin/domains/{id}/ml-model:
+    get:
+      summary: Get domain ML model
+      description: Get ML model configuration for a specific domain
+      tags:
+        - Admin
+        - Domains
+        - ML
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Domain ID
+      responses:
+        '200':
+          description: ML model retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/DomainMLModel'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      summary: Update domain ML model
+      description: Update ML model configuration for a domain
+      tags:
+        - Admin
+        - Domains
+        - ML
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Domain ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DomainMLModel'
+      responses:
+        '200':
+          description: ML model updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Domain ML model updated successfully"
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /admin/domains/initialize-default:
+    post:
+      summary: Initialize default domains
+      description: Create default domain configurations
+      tags:
+        - Admin
+        - Domains
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Default domains initialized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Default domains initialized successfully"
+                  domains_created:
+                    type: integer
+                    example: 6
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /admin/integrations:
+    get:
+      summary: List integrations
+      description: Get list of integrations, optionally filtered by type
+      tags:
+        - Admin
+        - Integrations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [payment, delivery, notifications, analytics, custom]
+          description: Filter by integration type
+      responses:
+        '200':
+          description: Integrations retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/IntegrationConfig'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      summary: Create integration
+      description: Create a new integration configuration
+      tags:
+        - Admin
+        - Integrations
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntegrationConfig'
+      responses:
+        '201':
+          description: Integration created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/IntegrationConfig'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /admin/integrations/{id}:
+    get:
+      summary: Get integration
+      description: Get a specific integration configuration
+      tags:
+        - Admin
+        - Integrations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Integration ID
+      responses:
+        '200':
+          description: Integration retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/IntegrationConfig'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      summary: Update integration
+      description: Update an integration configuration
+      tags:
+        - Admin
+        - Integrations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Integration ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntegrationConfig'
+      responses:
+        '200':
+          description: Integration updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/IntegrationConfig'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      summary: Delete integration
+      description: Delete an integration configuration
+      tags:
+        - Admin
+        - Integrations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Integration ID
+      responses:
+        '204':
+          description: Integration deleted
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /admin/frontend/configs:
+    get:
+      summary: List frontend configurations
+      description: Get list of all frontend configurations
+      tags:
+        - Admin
+        - Frontend
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Frontend configurations retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FrontendConfig'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      summary: Create frontend configuration
+      description: Create a new frontend configuration
+      tags:
+        - Admin
+        - Frontend
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FrontendConfig'
+      responses:
+        '201':
+          description: Frontend configuration created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/FrontendConfig'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /admin/frontend/configs/{id}:
+    get:
+      summary: Get frontend configuration
+      description: Get a specific frontend configuration
+      tags:
+        - Admin
+        - Frontend
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Frontend configuration ID
+      responses:
+        '200':
+          description: Frontend configuration retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/FrontendConfig'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      summary: Update frontend configuration
+      description: Update a frontend configuration
+      tags:
+        - Admin
+        - Frontend
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Frontend configuration ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FrontendConfig'
+      responses:
+        '200':
+          description: Frontend configuration updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/FrontendConfig'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      summary: Delete frontend configuration
+      description: Delete a frontend configuration
+      tags:
+        - Admin
+        - Frontend
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Frontend configuration ID
+      responses:
+        '204':
+          description: Frontend configuration deleted
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /admin/frontend/active:
+    get:
+      summary: Get active frontend configuration
+      description: Get the currently active frontend configuration
+      tags:
+        - Admin
+        - Frontend
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Active frontend configuration retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/FrontendConfig'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /admin/frontend/configs/{id}/active:
+    put:
+      summary: Set active frontend configuration
+      description: Set a frontend configuration as active
+      tags:
+        - Admin
+        - Frontend
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Frontend configuration ID
+      responses:
+        '200':
+          description: Frontend configuration set as active
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Frontend configuration set as active"
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalError'
 
 components:
   securitySchemes:
@@ -962,6 +2065,12 @@ components:
           $ref: '#/components/schemas/ExecutionMetadata'
         processing_time_ms:
           type: integer
+        domain_analysis:
+          $ref: '#/components/schemas/DomainAnalysisResult'
+        response_metadata:
+          $ref: '#/components/schemas/ResponseMetadata'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
 
     DomainSection:
       type: object
@@ -1118,6 +2227,165 @@ components:
           format: date-time
         error_message:
           type: string
+
+    # AI Domain Analysis Schemas
+    DomainAnalysisResult:
+      type: object
+      description: Результат анализа выбора доменов
+      properties:
+        selected_domains:
+          type: array
+          items:
+            $ref: '#/components/schemas/DomainSelection'
+        rejected_domains:
+          type: array
+          items:
+            $ref: '#/components/schemas/DomainSelection'
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Общая уверенность анализа
+        analysis_algorithm:
+          type: string
+          example: "hybrid_keyword_semantic"
+
+    DomainSelection:
+      type: object
+      description: Выбор домена с анализом
+      properties:
+        domain_id:
+          type: string
+          example: "commerce"
+        name:
+          type: string
+          example: "Коммерция и покупки"
+        type:
+          type: string
+          example: "commerce"
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        relevance:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        reason:
+          type: string
+        priority:
+          type: integer
+          minimum: 0
+          maximum: 100
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        capabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/DomainCapability'
+
+    DomainCapability:
+      type: object
+      description: Возможности домена
+      properties:
+        type:
+          type: string
+          example: "search"
+        description:
+          type: string
+          example: "Поиск в домене"
+        parameters:
+          type: object
+          additionalProperties:
+            type: string
+
+    ResponseQualityAnalysis:
+      type: object
+      description: Анализ качества ответа домена
+      properties:
+        domain_id:
+          type: string
+          example: "commerce"
+        overall_quality:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        relevance_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        completeness_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        accuracy_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        helpfulness_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        issues:
+          type: array
+          items:
+            $ref: '#/components/schemas/QualityIssue'
+        suggestions:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+
+    QualityIssue:
+      type: object
+      description: Проблема с качеством ответа
+      properties:
+        type:
+          type: string
+          enum: [relevance, completeness, accuracy, helpfulness]
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        description:
+          type: string
+        suggestion:
+          type: string
+
+    DomainRoutingDecision:
+      type: object
+      description: Решение о маршрутизации запроса
+      properties:
+        domain_id:
+          type: string
+        action:
+          type: string
+          enum: [execute, reroute, skip, fallback]
+        priority:
+          type: integer
+          minimum: 0
+          maximum: 100
+        reason:
+          type: string
+        alternatives:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties: true
 
     UserProfile:
       type: object
@@ -1444,3 +2712,325 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+
+    FrontendConfig:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Corporate Theme"
+        theme:
+          type: string
+          enum: [light, dark, custom]
+          example: "light"
+        colors:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            primary: "#0066CC"
+            secondary: "#00CC66"
+            accent: "#FF6600"
+            background: "#FFFFFF"
+            text: "#333333"
+        layout:
+          type: object
+          additionalProperties: true
+          example:
+            header:
+              height: "64px"
+              sticky: true
+            sidebar:
+              width: "240px"
+              collapsible: true
+        components:
+          type: object
+          additionalProperties: true
+          example:
+            button:
+              border_radius: "8px"
+              padding: "12px 24px"
+            card:
+              shadow: "0 2px 8px rgba(0,0,0,0.1)"
+              border_radius: "12px"
+        branding:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            logo: "https://cdn.example.com/logo.png"
+            name: "Nexus Protocol"
+            favicon: "https://cdn.example.com/favicon.ico"
+        active:
+          type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # Admin Schemas
+    AIConfig:
+      type: object
+      properties:
+        provider:
+          type: string
+          enum: [openai, anthropic, local, custom]
+          example: "openai"
+        model:
+          type: string
+          example: "gpt-4-turbo"
+        api_key:
+          type: string
+          description: "Encrypted API key"
+        base_url:
+          type: string
+          example: "https://api.openai.com/v1"
+        max_tokens:
+          type: integer
+          example: 4000
+        temperature:
+          type: number
+          format: float
+          example: 0.7
+        top_p:
+          type: number
+          format: float
+          example: 1.0
+        timeout:
+          type: integer
+          example: 60
+        custom_params:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            presence_penalty: "0.0"
+            frequency_penalty: "0.0"
+        enabled:
+          type: boolean
+          example: true
+
+    PromptConfig:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "prompt-commerce-001"
+        name:
+          type: string
+          example: "Commerce Product Search"
+        description:
+          type: string
+          example: "Prompt for product search"
+        domain:
+          type: string
+          enum: [commerce, recipes, travel, knowledge, health, finance]
+          example: "commerce"
+        type:
+          type: string
+          enum: [system, user, assistant]
+          example: "system"
+        template:
+          type: string
+          example: "You are a helpful assistant for product search. Query: {{query}}"
+        variables:
+          type: array
+          items:
+            type: string
+          example: ["query", "location"]
+        version:
+          type: integer
+          example: 1
+        active:
+          type: boolean
+          example: true
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            author: "admin"
+            tags: "commerce,search"
+
+    DomainConfig:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "domain-commerce-001"
+        name:
+          type: string
+          example: "Commerce Service"
+        type:
+          type: string
+          enum: [commerce, recipes, travel, knowledge, health, finance, custom]
+          example: "commerce"
+        enabled:
+          type: boolean
+          example: true
+        endpoint:
+          type: string
+          example: "https://commerce-api.example.com/v1"
+        auth_type:
+          type: string
+          enum: [none, api_key, oauth2, jwt]
+          example: "api_key"
+        auth_config:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            api_key: "encrypted_key"
+            header_name: "X-API-Key"
+        timeout:
+          type: integer
+          example: 30
+        retry_count:
+          type: integer
+          example: 3
+        priority:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 80
+        keywords:
+          type: array
+          items:
+            type: string
+          example: ["купить", "цена", "магазин", "товар"]
+        capabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/DomainCapability'
+        quality_rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/QualityRule'
+        ml_model:
+          $ref: '#/components/schemas/DomainMLModel'
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            version: "1.0.0"
+            region: "us-east-1"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    DomainCapability:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [search, purchase, execute, analyze]
+          example: "search"
+        description:
+          type: string
+          example: "Product search functionality"
+        parameters:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            max_results: "50"
+
+    QualityRule:
+      type: object
+      properties:
+        metric:
+          type: string
+          enum: [relevance, completeness, accuracy, helpfulness]
+          example: "relevance"
+        condition:
+          type: string
+          enum: [min_relevance, has_price, has_actions]
+          example: "min_relevance"
+        threshold:
+          type: number
+          format: float
+          example: 0.7
+        weight:
+          type: number
+          format: float
+          example: 0.3
+        description:
+          type: string
+          example: "Relevance must be above 0.7"
+
+    DomainMLModel:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [classification, regression, nlp]
+          example: "classification"
+        version:
+          type: string
+          example: "1.0.0"
+        accuracy:
+          type: number
+          format: float
+          example: 0.89
+        threshold:
+          type: number
+          format: float
+          example: 0.7
+        parameters:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            model_path: "/models/commerce-classifier"
+
+    IntegrationConfig:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "integration-payment-stripe"
+        name:
+          type: string
+          example: "Stripe Payment"
+        type:
+          type: string
+          enum: [payment, delivery, notifications, analytics, custom]
+          example: "payment"
+        provider:
+          type: string
+          example: "stripe"
+        enabled:
+          type: boolean
+          example: true
+        config:
+          type: object
+          additionalProperties: true
+          example:
+            currency: "RUB"
+            webhook_secret: "encrypted_secret"
+        credentials:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            api_key: "encrypted_key"
+            publishable_key: "pk_live_..."
+        webhook_url:
+          type: string
+          example: "https://api.nexus.dev/webhooks/stripe"
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            environment: "production"

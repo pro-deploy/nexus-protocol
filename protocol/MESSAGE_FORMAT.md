@@ -299,14 +299,14 @@ message ResponseMetadata {
 }
 ```
 
-### Пример 2: ExecuteTemplate Response
+### Пример 2: ExecuteTemplate Response (Информационный запрос)
 
 ```json
 {
   "metadata": {
     "request_id": "550e8400-e29b-41d4-a716-446655440000",
-    "protocol_version": "1.0.0",
-    "server_version": "1.0.2",
+    "protocol_version": "1.1.0",
+    "server_version": "1.1.3",
     "timestamp": 1640995235,
     "processing_time_ms": 3500
   },
@@ -314,15 +314,112 @@ message ResponseMetadata {
     "execution_id": "exec-789",
     "intent_id": "intent-abc",
     "status": "completed",
+    "query_type": "information_only",
+    "sections": [
+      {
+        "domain_id": "recipes",
+        "title": "Рецепты и кулинария",
+        "status": "success",
+        "results": [...]
+      }
+    ],
+    "domain_analysis": {
+      "selected_domains": [
+        {
+          "domain_id": "recipes",
+          "name": "Рецепты и кулинария",
+          "type": "recipes",
+          "confidence": 0.87,
+          "relevance": 0.92,
+          "reason": "Высокая уверенность: найдены ключевые слова рецепта",
+          "priority": 60
+        }
+      ],
+      "rejected_domains": [
+        {
+          "domain_id": "commerce",
+          "name": "Коммерция и покупки",
+          "confidence": 0.23,
+          "reason": "Низкая уверенность: минимальные признаки релевантности"
+        }
+      ],
+      "confidence": 0.87,
+      "analysis_algorithm": "hybrid_keyword_semantic"
+    }
+  }
+}
+```
+
+### Пример 2a: ExecuteTemplate Response (Запрос с покупкой)
+
+```json
+{
+  "metadata": {
+    "request_id": "550e8400-e29b-41d4-a716-446655440001",
+    "protocol_version": "1.1.0",
+    "server_version": "1.1.3",
+    "timestamp": 1640995235,
+    "processing_time_ms": 245
+  },
+  "data": {
+    "execution_id": "exec-790",
+    "intent_id": "intent-def",
+    "status": "completed",
     "query_type": "with_purchases_services",
     "sections": [
       {
         "domain_id": "commerce",
-        "title": "Product Recommendations",
+        "title": "Коммерческие предложения",
         "status": "success",
-        "results": [...]
+        "response_time_ms": 200,
+        "results": [
+          {
+            "id": "product-456",
+            "type": "product_purchase",
+            "title": "Coca-Cola 1л бутылка",
+            "description": "Найдено в 3 магазинах рядом с вами",
+            "data": {
+              "price": "89 ₽",
+              "availability": "в наличии",
+              "stores_count": 3,
+              "nearest_store": {
+                "name": "Пятерочка",
+                "distance": "200м",
+                "address": "ул. Ленина, 15",
+                "pickup_available": true,
+                "work_hours": "Круглосуточно"
+              }
+            },
+            "relevance": 0.95,
+            "confidence": 0.88,
+            "actions": [
+              {
+                "type": "reserve_product",
+                "label": "Зарезервировать товар",
+                "method": "POST",
+                "url": "/api/v1/commerce/reserve"
+              },
+              {
+                "type": "purchase",
+                "label": "Купить сейчас",
+                "method": "POST",
+                "url": "/api/v1/commerce/purchase"
+              }
+            ]
+          }
+        ]
       }
-    ]
+    ],
+    "ranking": {
+      "items": [
+        {
+          "id": "product-456",
+          "score": 0.92,
+          "rank": 1
+        }
+      ],
+      "algorithm": "weighted_relevance_confidence"
+    }
   }
 }
 ```
@@ -399,6 +496,67 @@ message ResponseMetadata {
 ### Дополнительные поля в data
 
 Поле `data` может содержать любые данные, специфичные для операции. Структура определяется API спецификацией для конкретной операции.
+
+## Frontend Configuration
+
+Клиенты могут получать активную конфигурацию визуала через публичный endpoint:
+
+**Request:**
+```http
+GET /api/v1/frontend/config HTTP/1.1
+```
+
+**Response:**
+```json
+{
+  "metadata": {
+    "request_id": "550e8400-e29b-41d4-a716-446655440000",
+    "protocol_version": "1.1.0",
+    "server_version": "1.1.3",
+    "timestamp": 1640995235,
+    "processing_time_ms": 5
+  },
+  "data": {
+    "id": "frontend-config-001",
+    "name": "Corporate Theme",
+    "theme": "light",
+    "colors": {
+      "primary": "#0066CC",
+      "secondary": "#00CC66",
+      "accent": "#FF6600",
+      "background": "#FFFFFF",
+      "text": "#333333"
+    },
+    "layout": {
+      "header": {
+        "height": "64px",
+        "sticky": true
+      },
+      "sidebar": {
+        "width": "240px",
+        "collapsible": true
+      }
+    },
+    "components": {
+      "button": {
+        "border_radius": "8px",
+        "padding": "12px 24px"
+      }
+    },
+    "branding": {
+      "logo": "https://cdn.example.com/logo.png",
+      "name": "Nexus Protocol",
+      "favicon": "https://cdn.example.com/favicon.ico"
+    },
+    "active": true
+  }
+}
+```
+
+**Особенности:**
+- Публичный endpoint (не требует аутентификации)
+- Возвращает только активную конфигурацию
+- Используется клиентами для настройки UI
 
 ## См. также
 

@@ -113,3 +113,75 @@ func (c *Client) StreamTemplateResults(ctx context.Context, executionID string) 
 	return resp, nil
 }
 
+// GetWorkflowSteps возвращает шаги workflow из ответа, отсортированные по номеру шага
+func (c *Client) GetWorkflowSteps(result *types.ExecuteTemplateResponse) []types.WorkflowStep {
+	if result.Workflow == nil || len(result.Workflow.Steps) == 0 {
+		return nil
+	}
+	
+	// Сортируем шаги по номеру
+	steps := make([]types.WorkflowStep, len(result.Workflow.Steps))
+	copy(steps, result.Workflow.Steps)
+	
+	// Простая сортировка по номеру шага
+	for i := 0; i < len(steps)-1; i++ {
+		for j := i + 1; j < len(steps); j++ {
+			if steps[i].Step > steps[j].Step {
+				steps[i], steps[j] = steps[j], steps[i]
+			}
+		}
+	}
+	
+	return steps
+}
+
+// GetNextWorkflowStep возвращает следующий шаг workflow, который готов к выполнению
+// (все зависимости выполнены)
+func (c *Client) GetNextWorkflowStep(result *types.ExecuteTemplateResponse) *types.WorkflowStep {
+	if result.Workflow == nil {
+		return nil
+	}
+	
+	steps := c.GetWorkflowSteps(result)
+	completedResults := make(map[string]bool)
+	
+	for _, step := range steps {
+		// Проверяем, выполнены ли все зависимости
+		allDepsCompleted := true
+		for _, depID := range step.DependsOn {
+			if !completedResults[depID] {
+				allDepsCompleted = false
+				break
+			}
+		}
+		
+		// Если зависимости выполнены и шаг еще не выполнен
+		if allDepsCompleted && step.Status == "pending" {
+			return &step
+		}
+		
+		// Если шаг выполнен, добавляем его результат в список выполненных
+		if step.Status == "completed" && step.ResultID != "" {
+			completedResults[step.ResultID] = true
+		}
+	}
+	
+	return nil
+}
+
+// GetWorkflowStepByDomain возвращает шаги workflow для указанного домена
+func (c *Client) GetWorkflowStepByDomain(result *types.ExecuteTemplateResponse, domain string) []types.WorkflowStep {
+	if result.Workflow == nil {
+		return nil
+	}
+	
+	var domainSteps []types.WorkflowStep
+	for _, step := range result.Workflow.Steps {
+		if step.Domain == domain {
+			domainSteps = append(domainSteps, step)
+		}
+	}
+	
+	return domainSteps
+}
+

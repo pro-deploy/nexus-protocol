@@ -12,6 +12,7 @@ Go SDK для работы с Nexus Application Protocol.
 - **Детальный health check**: Статус компонентов и емкость системы
 - **Пагинация и фильтры**: Продвинутый поиск с фильтрами
 - **Локализация**: Поддержка locale, timezone, currency
+- **Workflow поддержка**: Многошаговые сценарии с зависимостями между шагами
 
 **Для enterprise клиентов**: [Enterprise Demo](./examples/enterprise/)
 
@@ -147,6 +148,22 @@ if err != nil {
     return
 }
 
+// Работа с workflow (для многошаговых сценариев)
+if result.Workflow != nil {
+    // Получить все шаги workflow
+    steps := nexusClient.GetWorkflowSteps(result)
+    for _, step := range steps {
+        fmt.Printf("Step %d: %s (%s) - %s\n", 
+            step.Step, step.Action, step.Domain, step.Status)
+    }
+    
+    // Получить следующий шаг для выполнения
+    nextStep := nexusClient.GetNextWorkflowStep(result)
+    if nextStep != nil {
+        fmt.Printf("Next step: %s\n", nextStep.Action)
+    }
+}
+
 fmt.Printf("Execution ID: %s\n", result.ExecutionID)
 fmt.Printf("Status: %s\n", result.Status)
 
@@ -156,6 +173,13 @@ if result.ResponseMetadata != nil {
         fmt.Printf("Rate limit: %d remaining\n",
             result.ResponseMetadata.RateLimitInfo.Remaining)
     }
+}
+
+// Получение конфигурации фронтенда (публичный endpoint)
+frontendConfig, err := nexusClient.GetFrontendConfig(ctx)
+if err == nil {
+    fmt.Printf("Theme: %s\n", frontendConfig.Theme)
+    fmt.Printf("Primary Color: %s\n", frontendConfig.Colors["primary"])
 }
 ```
 

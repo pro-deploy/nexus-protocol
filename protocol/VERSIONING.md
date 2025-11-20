@@ -34,7 +34,7 @@ MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]
 
 ## Текущая версия
 
-**Protocol Version:** `1.1.0` ✨ (Enterprise Edition)
+**Protocol Version:** `2.0.0` ✨ (Advanced Enterprise Edition)
 
 ## Правила версионирования
 

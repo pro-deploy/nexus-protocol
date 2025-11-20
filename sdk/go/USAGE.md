@@ -97,6 +97,176 @@ req := &types.ExecuteTemplateRequest{
 }
 ```
 
+### Запрос с покупкой и геолокацией
+
+```go
+req := &types.ExecuteTemplateRequest{
+    Query:    "Найди где рядом продается кокакола и купи литровую бутылку колы заберу самостоятельно",
+    Language: "ru",
+    Context: &types.UserContext{
+        UserID:    "user-123",
+        SessionID: "session-456",
+        Location: &types.UserLocation{
+            Latitude:  55.7558,  // Москва
+            Longitude: 37.6173,
+            Accuracy:  50,      // точность 50 метров
+        },
+        Locale:    "ru-RU",
+        Currency:  "RUB",
+        Region:    "RU",
+    },
+    Options: &types.ExecuteOptions{
+        TimeoutMS:           30000,
+        MaxResultsPerDomain: 10,
+        ParallelExecution:   true,
+    },
+}
+
+result, err := client.ExecuteTemplate(ctx, req)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Проверка типа запроса
+if result.QueryType == "with_purchases_services" {
+    fmt.Println("Запрос с возможностью покупки")
+    
+        // Обработка результатов из commerce домена
+        for _, section := range result.Sections {
+            if section.DomainID == "commerce" {
+                for _, item := range section.Results {
+                    fmt.Printf("Товар: %s\n", item.Title)
+                    fmt.Printf("Релевантность: %.2f\n", item.Relevance)
+                    
+                    // Обработка данных товара (цена, магазины и т.д.)
+                    if item.Data != nil {
+                        if price, ok := item.Data["price"].(string); ok {
+                            fmt.Printf("Цена: %s\n", price)
+                        }
+                        if stores, ok := item.Data["stores"]; ok {
+                            fmt.Printf("Магазины: %v\n", stores)
+                        }
+                    }
+                    
+                    // Обработка действий (покупка, резервирование)
+                    for _, action := range item.Actions {
+                        fmt.Printf("Действие: %s - %s\n", action.Type, action.Label)
+                    }
+                }
+            }
+        }
+}
+```
+
+### Многошаговый сценарий (заказ еды + оплата + доставка + напоминания)
+
+```go
+req := &types.ExecuteTemplateRequest{
+    Query: "закажи в макдоналдсе карточку фри, оплати, введи адрес доставки, и напоминай когда курьер выедет с заказом выпить таблетки, и через два часа выпить еще одни таблетки",
+    Language: "ru",
+    Context: &types.UserContext{
+        UserID: "user-123",
+        Location: &types.UserLocation{
+            Latitude:  55.7558,
+            Longitude: 37.6173,
+            Accuracy:  50,
+        },
+        Locale:   "ru-RU",
+        Currency: "RUB",
+        Region:   "RU",
+    },
+}
+
+result, err := client.ExecuteTemplate(ctx, req)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Обработка многошагового workflow
+if result.QueryType == "with_purchases_services" {
+    fmt.Println("✅ Многошаговый сценарий обработан")
+    
+    // Работа с workflow (если доступен)
+    if result.Workflow != nil {
+        fmt.Println("\n📋 Workflow шаги:")
+        steps := client.GetWorkflowSteps(result)
+        for _, step := range steps {
+            fmt.Printf("  Шаг %d: %s (%s) - статус: %s\n", 
+                step.Step, step.Action, step.Domain, step.Status)
+            if len(step.DependsOn) > 0 {
+                fmt.Printf("    Зависит от: %v\n", step.DependsOn)
+            }
+        }
+        
+        // Получение следующего шага для выполнения
+        nextStep := client.GetNextWorkflowStep(result)
+        if nextStep != nil {
+            fmt.Printf("\n➡️  Следующий шаг: %s (%s)\n", nextStep.Action, nextStep.Domain)
+        }
+        
+        // Получение шагов по домену
+        commerceSteps := client.GetWorkflowStepByDomain(result, "commerce")
+        if len(commerceSteps) > 0 {
+            fmt.Printf("\n🛒 Шаги commerce домена: %d\n", len(commerceSteps))
+        }
+    }
+    
+    // Обработка каждого домена
+    for _, section := range result.Sections {
+        switch section.DomainID {
+        case "commerce":
+            fmt.Println("\n🍔 Заказ еды:")
+            for _, item := range section.Results {
+                fmt.Printf("  - %s: %s\n", item.Title, item.Data["price"])
+                // Выполнение заказа через action
+                for _, action := range item.Actions {
+                    if action.Type == "order_now" {
+                        fmt.Printf("    → Действие: %s\n", action.Label)
+                    }
+                }
+            }
+            
+        case "payment":
+            fmt.Println("\n💳 Оплата:")
+            for _, item := range section.Results {
+                fmt.Printf("  - Сумма: %s\n", item.Data["amount"])
+                for _, action := range item.Actions {
+                    if action.Type == "process_payment" {
+                        fmt.Printf("    → Действие: %s\n", action.Label)
+                    }
+                }
+            }
+            
+        case "delivery":
+            fmt.Println("\n🚚 Доставка:")
+            for _, item := range section.Results {
+                fmt.Printf("  - %s\n", item.Title)
+                for _, action := range item.Actions {
+                    fmt.Printf("    → Действие: %s\n", action.Label)
+                }
+            }
+            
+        case "notifications":
+            fmt.Println("\n🔔 Напоминания:")
+            for _, item := range section.Results {
+                fmt.Printf("  - %s\n", item.Title)
+                if item.Data != nil {
+                    if reminderType, ok := item.Data["reminder_type"].(string); ok {
+                        fmt.Printf("    Тип: %s\n", reminderType)
+                    }
+                    if delay, ok := item.Data["delay_hours"].(float64); ok {
+                        fmt.Printf("    Задержка: %.0f часов\n", delay)
+                    }
+                }
+                for _, action := range item.Actions {
+                    fmt.Printf("    → Действие: %s\n", action.Label)
+                }
+            }
+        }
+    }
+}
+```
+
 ### С опциями выполнения
 
 ```go
@@ -160,6 +330,33 @@ for scanner.Scan() {
         // Обработка данных
     }
 }
+```
+
+## Получение конфигурации фронтенда
+
+### Публичный endpoint (без аутентификации)
+
+```go
+// Получение активной конфигурации фронтенда
+config, err := client.GetFrontendConfig(ctx)
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Printf("Theme: %s\n", config.Theme)
+fmt.Printf("Primary Color: %s\n", config.Colors["primary"])
+
+// Использование конфигурации для настройки UI
+if config.Branding != nil {
+    logoURL := config.Branding["logo"]
+    appName := config.Branding["name"]
+    fmt.Printf("Logo: %s, Name: %s\n", logoURL, appName)
+}
+
+// Применение цветовой схемы
+primaryColor := config.Colors["primary"]
+secondaryColor := config.Colors["secondary"]
+// ... применение в UI
 ```
 
 ## Обработка ошибок
