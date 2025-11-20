@@ -6,6 +6,7 @@ type LogEventRequest struct {
 	UserID    string                 `json:"user_id,omitempty"`
 	TenantID  string                 `json:"tenant_id,omitempty"`
 	Data      map[string]interface{} `json:"data,omitempty"`
+	Metadata  *RequestMetadata       `json:"metadata,omitempty"`
 }
 
 // LogEventResponse представляет ответ логирования события

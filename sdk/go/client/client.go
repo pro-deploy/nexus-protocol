@@ -31,6 +31,7 @@ type Client struct {
 	clientVersion   string
 	clientID        string
 	clientType      string
+	customHeaders   map[string]string
 	retryConfig     RetryConfig
 	logger          Logger
 	interceptors    []Interceptor
@@ -86,6 +87,7 @@ func NewClient(config Config) *Client {
 		clientVersion:   config.ClientVersion,
 		clientID:        config.ClientID,
 		clientType:      config.ClientType,
+		customHeaders:   make(map[string]string),
 		retryConfig:     retryCfg,
 		logger:          logger,
 		interceptors:    make([]Interceptor, 0),
@@ -100,6 +102,49 @@ func NewClient(config Config) *Client {
 // Токен будет использоваться во всех последующих запросах.
 func (c *Client) SetToken(token string) {
 	c.token = token
+}
+
+// SetCustomHeader устанавливает кастомный заголовок для всех последующих запросов.
+// Заголовок будет включен в RequestMetadata.custom_headers.
+func (c *Client) SetCustomHeader(key, value string) {
+	if c.customHeaders == nil {
+		c.customHeaders = make(map[string]string)
+	}
+	c.customHeaders[key] = value
+}
+
+// RemoveCustomHeader удаляет кастомный заголовок.
+func (c *Client) RemoveCustomHeader(key string) {
+	if c.customHeaders != nil {
+		delete(c.customHeaders, key)
+	}
+}
+
+// ClearCustomHeaders удаляет все кастомные заголовки.
+func (c *Client) ClearCustomHeaders() {
+	c.customHeaders = make(map[string]string)
+}
+
+// getCustomHeaders возвращает копию кастомных заголовков для включения в метаданные
+func (c *Client) getCustomHeaders() map[string]string {
+	if c.customHeaders == nil {
+		return make(map[string]string)
+	}
+	// Возвращаем копию, чтобы избежать изменений извне
+	result := make(map[string]string, len(c.customHeaders))
+	for k, v := range c.customHeaders {
+		result[k] = v
+	}
+	return result
+}
+
+// createRequestMetadata создает RequestMetadata с настройками клиента
+func (c *Client) createRequestMetadata() *types.RequestMetadata {
+	metadata := types.NewRequestMetadata(c.protocolVersion, c.clientVersion)
+	metadata.ClientID = c.clientID
+	metadata.ClientType = c.clientType
+	metadata.CustomHeaders = c.getCustomHeaders()
+	return metadata
 }
 
 // doRequest выполняет HTTP запрос с поддержкой context, retry и rate limiting
@@ -337,6 +382,58 @@ func (c *Client) parseResponse(resp *http.Response, result interface{}) error {
 	if result != nil {
 		if err := json.Unmarshal(body, result); err != nil {
 			return fmt.Errorf("failed to unmarshal response: %w", err)
+		}
+
+		// Проверяем совместимость версий протокола, если в ответе есть ResponseMetadata
+		// Пытаемся извлечь ResponseMetadata из результата
+		if responseWithMetadata, ok := result.(interface{ GetMetadata() *types.ResponseMetadata }); ok {
+			if metadata := responseWithMetadata.GetMetadata(); metadata != nil {
+				if err := types.ValidateResponseMetadata(metadata); err != nil {
+					c.logger.Warn("Invalid response metadata",
+						Field{Key: "error", Value: err.Error()},
+					)
+				} else {
+					compatible, err := types.IsCompatible(c.protocolVersion, metadata.ProtocolVersion)
+					if err != nil {
+						c.logger.Warn("Failed to check version compatibility",
+							Field{Key: "error", Value: err.Error()},
+						)
+					} else if !compatible {
+						return &types.ErrorDetail{
+							Code:    "PROTOCOL_VERSION_MISMATCH",
+							Type:    "PROTOCOL_VERSION_ERROR",
+							Message: fmt.Sprintf("Protocol version mismatch: client %s is not compatible with server %s", c.protocolVersion, metadata.ProtocolVersion),
+							Details: fmt.Sprintf("Client version %s is not compatible with server version %s. Major versions must match, and client minor version must not exceed server minor version.", c.protocolVersion, metadata.ProtocolVersion),
+						}
+					}
+				}
+			}
+		}
+
+		// Альтернативный способ: проверяем структуры с полем Metadata типа *ResponseMetadata
+		var tempStruct struct {
+			Metadata *types.ResponseMetadata `json:"metadata"`
+		}
+		if err := json.Unmarshal(body, &tempStruct); err == nil && tempStruct.Metadata != nil {
+			if err := types.ValidateResponseMetadata(tempStruct.Metadata); err != nil {
+				c.logger.Warn("Invalid response metadata",
+					Field{Key: "error", Value: err.Error()},
+				)
+			} else {
+				compatible, err := types.IsCompatible(c.protocolVersion, tempStruct.Metadata.ProtocolVersion)
+				if err != nil {
+					c.logger.Warn("Failed to check version compatibility",
+						Field{Key: "error", Value: err.Error()},
+					)
+				} else if !compatible {
+					return &types.ErrorDetail{
+						Code:    "PROTOCOL_VERSION_MISMATCH",
+						Type:    "PROTOCOL_VERSION_ERROR",
+						Message: fmt.Sprintf("Protocol version mismatch: client %s is not compatible with server %s", c.protocolVersion, tempStruct.Metadata.ProtocolVersion),
+						Details: fmt.Sprintf("Client version %s is not compatible with server version %s. Major versions must match, and client minor version must not exceed server minor version.", c.protocolVersion, tempStruct.Metadata.ProtocolVersion),
+					}
+				}
+			}
 		}
 	}
 

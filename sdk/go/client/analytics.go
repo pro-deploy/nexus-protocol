@@ -11,6 +11,11 @@ import (
 // LogEvent логирует событие аналитики для отслеживания.
 // Требует валидный JWT токен.
 func (c *Client) LogEvent(ctx context.Context, req *types.LogEventRequest) (*types.LogEventResponse, error) {
+	// Если метаданные не указаны, создаем их автоматически
+	if req.Metadata == nil {
+		req.Metadata = c.createRequestMetadata()
+	}
+
 	resp, err := c.doRequest(ctx, "POST", PathAPIV1AnalyticsEvents, req)
 	if err != nil {
 		return nil, err

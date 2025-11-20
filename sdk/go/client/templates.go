@@ -27,9 +27,7 @@ import (
 func (c *Client) ExecuteTemplate(ctx context.Context, req *types.ExecuteTemplateRequest) (*types.ExecuteTemplateResponse, error) {
 	// Если метаданные не указаны, создаем их автоматически
 	if req.Metadata == nil {
-		req.Metadata = types.NewRequestMetadata(c.protocolVersion, c.clientVersion)
-		req.Metadata.ClientID = c.clientID
-		req.Metadata.ClientType = c.clientType
+		req.Metadata = c.createRequestMetadata()
 	}
 
 	// Устанавливаем язык по умолчанию

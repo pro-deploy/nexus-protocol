@@ -24,6 +24,11 @@ import (
 //	}
 //	fmt.Printf("User ID: %s\n", resp.UserID)
 func (c *Client) RegisterUser(ctx context.Context, req *types.RegisterUserRequest) (*types.RegisterUserResponse, error) {
+	// Если метаданные не указаны, создаем их автоматически
+	if req.Metadata == nil {
+		req.Metadata = c.createRequestMetadata()
+	}
+
 	resp, err := c.doRequest(ctx, "POST", PathAPIV1AuthRegister, req)
 	if err != nil {
 		return nil, err
@@ -57,6 +62,11 @@ func (c *Client) RegisterUser(ctx context.Context, req *types.RegisterUserReques
 //	}
 //	fmt.Printf("Access token: %s\n", resp.AccessToken)
 func (c *Client) Login(ctx context.Context, req *types.LoginRequest) (*types.LoginResponse, error) {
+	// Если метаданные не указаны, создаем их автоматически
+	if req.Metadata == nil {
+		req.Metadata = c.createRequestMetadata()
+	}
+
 	resp, err := c.doRequest(ctx, "POST", PathAPIV1AuthLogin, req)
 	if err != nil {
 		return nil, err
@@ -82,6 +92,11 @@ func (c *Client) Login(ctx context.Context, req *types.LoginRequest) (*types.Log
 // RefreshToken обновляет access token используя refresh token.
 // Новый access token автоматически устанавливается в клиент.
 func (c *Client) RefreshToken(ctx context.Context, req *types.RefreshTokenRequest) (*types.RefreshTokenResponse, error) {
+	// Если метаданные не указаны, создаем их автоматически
+	if req.Metadata == nil {
+		req.Metadata = c.createRequestMetadata()
+	}
+
 	resp, err := c.doRequest(ctx, "POST", PathAPIV1AuthRefresh, req)
 	if err != nil {
 		return nil, err
@@ -127,6 +142,11 @@ func (c *Client) GetUserProfile(ctx context.Context) (*types.UserProfile, error)
 // UpdateUserProfile обновляет профиль текущего аутентифицированного пользователя.
 // Можно обновить first_name, last_name и bio.
 func (c *Client) UpdateUserProfile(ctx context.Context, req *types.UpdateProfileRequest) (*types.UserProfile, error) {
+	// Если метаданные не указаны, создаем их автоматически
+	if req.Metadata == nil {
+		req.Metadata = c.createRequestMetadata()
+	}
+
 	resp, err := c.doRequest(ctx, "PUT", PathAPIV1UsersProfile, req)
 	if err != nil {
 		return nil, err

@@ -6,6 +6,7 @@ type CreateConversationRequest struct {
 	BotID       string                 `json:"bot_id,omitempty"`
 	Context     map[string]interface{} `json:"context,omitempty"`
 	SystemPrompt string                `json:"system_prompt,omitempty"`
+	Metadata    *RequestMetadata       `json:"metadata,omitempty"`
 }
 
 // Conversation представляет беседу
@@ -36,9 +37,10 @@ type Message struct {
 
 // SendMessageRequest представляет запрос отправки сообщения
 type SendMessageRequest struct {
-	Content    string                 `json:"content"`
-	MessageType string                `json:"message_type,omitempty"` // text, voice, image
-	Metadata   map[string]interface{} `json:"metadata,omitempty"`
+	Content         string                 `json:"content"`
+	MessageType     string                 `json:"message_type,omitempty"` // text, voice, image
+	MessageMetadata map[string]interface{} `json:"message_metadata,omitempty"` // метаданные сообщения (переименовано из metadata для соответствия протоколу)
+	Metadata        *RequestMetadata      `json:"metadata,omitempty"` // метаданные протокола (RequestMetadata)
 }
 
 // MessageResponse представляет ответ на отправку сообщения

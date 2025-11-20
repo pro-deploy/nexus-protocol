@@ -10,6 +10,11 @@ import (
 // CreateConversation создает новую беседу с AI.
 // Требует валидный JWT токен.
 func (c *Client) CreateConversation(ctx context.Context, req *types.CreateConversationRequest) (*types.Conversation, error) {
+	// Если метаданные не указаны, создаем их автоматически
+	if req.Metadata == nil {
+		req.Metadata = c.createRequestMetadata()
+	}
+
 	resp, err := c.doRequest(ctx, "POST", PathAPIV1Conversations, req)
 	if err != nil {
 		return nil, err
@@ -54,6 +59,11 @@ func (c *Client) SendMessage(ctx context.Context, conversationID string, req *ty
 	// Устанавливаем тип сообщения по умолчанию
 	if req.MessageType == "" {
 		req.MessageType = "text"
+	}
+
+	// Если метаданные не указаны, создаем их автоматически
+	if req.Metadata == nil {
+		req.Metadata = c.createRequestMetadata()
 	}
 
 	path := fmt.Sprintf("%s/%s/messages", PathAPIV1Conversations, conversationID)

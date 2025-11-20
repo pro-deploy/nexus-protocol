@@ -1,6 +1,10 @@
 package types
 
 import (
+	"fmt"
+	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -35,5 +39,133 @@ type ResponseMetadata struct {
 	ServerVersion    string `json:"server_version"`
 	Timestamp        int64  `json:"timestamp"`
 	ProcessingTimeMS int32  `json:"processing_time_ms"`
+}
+
+var (
+	// versionPattern соответствует Semantic Versioning: MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]
+	versionPattern = regexp.MustCompile(`^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$`)
+	// uuidPattern соответствует UUID v4
+	uuidPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
+)
+
+// ValidateVersion проверяет формат версии по Semantic Versioning
+func ValidateVersion(version string) error {
+	if version == "" {
+		return fmt.Errorf("version cannot be empty")
+	}
+	if !versionPattern.MatchString(version) {
+		return fmt.Errorf("invalid version format: %s (expected MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD])", version)
+	}
+	return nil
+}
+
+// ValidateUUID проверяет формат UUID v4
+func ValidateUUID(uuidStr string) error {
+	if uuidStr == "" {
+		return fmt.Errorf("UUID cannot be empty")
+	}
+	if !uuidPattern.MatchString(strings.ToLower(uuidStr)) {
+		return fmt.Errorf("invalid UUID format: %s (expected UUID v4)", uuidStr)
+	}
+	return nil
+}
+
+// IsCompatible проверяет совместимость версий протокола
+// Версии совместимы если:
+// 1. Major версии совпадают
+// 2. Minor версия клиента <= Minor версии сервера
+func IsCompatible(clientVersion, serverVersion string) (bool, error) {
+	if err := ValidateVersion(clientVersion); err != nil {
+		return false, fmt.Errorf("invalid client version: %w", err)
+	}
+	if err := ValidateVersion(serverVersion); err != nil {
+		return false, fmt.Errorf("invalid server version: %w", err)
+	}
+
+	// Парсим версии (игнорируем prerelease и build metadata)
+	clientParts := strings.Split(strings.Split(clientVersion, "+")[0], "-")[0]
+	serverParts := strings.Split(strings.Split(serverVersion, "+")[0], "-")[0]
+
+	clientNums := strings.Split(clientParts, ".")
+	serverNums := strings.Split(serverParts, ".")
+
+	if len(clientNums) < 3 || len(serverNums) < 3 {
+		return false, fmt.Errorf("invalid version format")
+	}
+
+	clientMajor, err := strconv.Atoi(clientNums[0])
+	if err != nil {
+		return false, fmt.Errorf("invalid client major version: %w", err)
+	}
+
+	clientMinor, err := strconv.Atoi(clientNums[1])
+	if err != nil {
+		return false, fmt.Errorf("invalid client minor version: %w", err)
+	}
+
+	serverMajor, err := strconv.Atoi(serverNums[0])
+	if err != nil {
+		return false, fmt.Errorf("invalid server major version: %w", err)
+	}
+
+	serverMinor, err := strconv.Atoi(serverNums[1])
+	if err != nil {
+		return false, fmt.Errorf("invalid server minor version: %w", err)
+	}
+
+	// Major версии должны совпадать
+	if clientMajor != serverMajor {
+		return false, nil
+	}
+
+	// Minor версия клиента не должна быть больше сервера
+	if clientMinor > serverMinor {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+// ValidateRequestMetadata валидирует RequestMetadata
+func ValidateRequestMetadata(metadata *RequestMetadata) error {
+	if metadata == nil {
+		return fmt.Errorf("metadata cannot be nil")
+	}
+	if err := ValidateUUID(metadata.RequestID); err != nil {
+		return fmt.Errorf("invalid request_id: %w", err)
+	}
+	if err := ValidateVersion(metadata.ProtocolVersion); err != nil {
+		return fmt.Errorf("invalid protocol_version: %w", err)
+	}
+	if err := ValidateVersion(metadata.ClientVersion); err != nil {
+		return fmt.Errorf("invalid client_version: %w", err)
+	}
+	if metadata.Timestamp <= 0 {
+		return fmt.Errorf("timestamp must be positive")
+	}
+	return nil
+}
+
+// ValidateResponseMetadata валидирует ResponseMetadata
+func ValidateResponseMetadata(metadata *ResponseMetadata) error {
+	if metadata == nil {
+		return fmt.Errorf("metadata cannot be nil")
+	}
+	if err := ValidateUUID(metadata.RequestID); err != nil {
+		return fmt.Errorf("invalid request_id: %w", err)
+	}
+	if err := ValidateVersion(metadata.ProtocolVersion); err != nil {
+		return fmt.Errorf("invalid protocol_version: %w", err)
+	}
+	if err := ValidateVersion(metadata.ServerVersion); err != nil {
+		return fmt.Errorf("invalid server_version: %w", err)
+	}
+	if metadata.Timestamp <= 0 {
+		return fmt.Errorf("timestamp must be positive")
+	}
+	if metadata.ProcessingTimeMS < 0 {
+		return fmt.Errorf("processing_time_ms must be non-negative")
+	}
+	return nil
 }
 

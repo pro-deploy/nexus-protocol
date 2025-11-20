@@ -2,8 +2,8 @@ package types
 
 // ErrorDetail содержит детальную информацию об ошибке
 type ErrorDetail struct {
-	Code     string            `json:"code"`
-	Type     string            `json:"type"`
+	Code     string            `json:"error_code"`
+	Type     string            `json:"error_type"`
 	Message  string            `json:"message"`
 	Field    string            `json:"field,omitempty"`
 	Details  string            `json:"details,omitempty"`
@@ -43,5 +43,25 @@ func (e *ErrorDetail) IsRateLimitError() bool {
 // IsInternalError проверяет, является ли ошибка внутренней ошибкой
 func (e *ErrorDetail) IsInternalError() bool {
 	return e.Type == "INTERNAL_ERROR"
+}
+
+// IsNotFoundError проверяет, является ли ошибка ошибкой "не найдено"
+func (e *ErrorDetail) IsNotFoundError() bool {
+	return e.Type == "NOT_FOUND"
+}
+
+// IsConflictError проверяет, является ли ошибка ошибкой конфликта
+func (e *ErrorDetail) IsConflictError() bool {
+	return e.Type == "CONFLICT"
+}
+
+// IsExternalError проверяет, является ли ошибка ошибкой внешнего сервиса
+func (e *ErrorDetail) IsExternalError() bool {
+	return e.Type == "EXTERNAL_ERROR"
+}
+
+// IsProtocolVersionError проверяет, является ли ошибка ошибкой несовместимости версий протокола
+func (e *ErrorDetail) IsProtocolVersionError() bool {
+	return e.Type == "PROTOCOL_VERSION_ERROR"
 }
 
