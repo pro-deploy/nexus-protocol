@@ -114,13 +114,38 @@
 {
   "x-feature-flag": "new-ui",
   "x-experiment-id": "exp-456",
-  "x-debug-mode": "true"
+  "x-debug-mode": "true",
+  "x-priority": "high",
+  "x-cache-control": "cache-first",
+  "x-cache-ttl": "300"
 }
 ```
+
+**Стандартизированные заголовки:**
+
+**Приоритет запросов:**
+- `x-priority` (string) - приоритет запроса
+  - Значения: `low`, `normal`, `high`, `critical`
+  - По умолчанию: `normal`
+
+- `x-request-source` (string) - источник запроса
+  - Значения: `user`, `system`, `batch`, `webhook`
+
+**Кэширование:**
+- `x-cache-control` (string) - контроль кэширования
+  - Значения: `no-cache`, `cache-only`, `cache-first`, `network-first`
+
+- `x-cache-ttl` (int32) - TTL кэша в секундах
+- `x-cache-key` (string) - кастомный ключ кэша
+
+**A/B тестирование:**
+- `x-experiment-id` (string) - ID эксперимента
+- `x-feature-{name}` (string) - feature flag
 
 **Правила:**
 - Произвольные ключ-значение пары
 - Используются для feature flags, экспериментов, отладки
+- Префикс `x-` для кастомных заголовков
 - Не должны содержать чувствительную информацию
 
 ## ResponseMetadata (Метаданные ответа)
@@ -133,7 +158,22 @@
   "protocol_version": "1.0.0",
   "server_version": "1.0.2",
   "timestamp": 1640995235,
-  "processing_time_ms": 3500
+  "processing_time_ms": 3500,
+  "rate_limit_info": {
+    "limit": 1000,
+    "remaining": 950,
+    "reset_at": 1640996100
+  },
+  "cache_info": {
+    "cache_hit": true,
+    "cache_key": "template:query:hash",
+    "cache_ttl": 300
+  },
+  "quota_info": {
+    "quota_used": 50000,
+    "quota_limit": 100000,
+    "quota_type": "requests"
+  }
 }
 ```
 
@@ -189,6 +229,48 @@
 - Время от получения запроса до отправки ответа
 - Включает время обработки на всех уровнях
 - Используется для мониторинга производительности
+
+#### rate_limit_info (опционально)
+
+**Тип:** object (RateLimitInfo)  
+**Описание:** Информация о rate limiting для текущего запроса  
+
+**Структура:**
+```json
+{
+  "limit": 1000,        // лимит запросов
+  "remaining": 950,     // оставшиеся запросы
+  "reset_at": 1640996100 // время сброса лимита (Unix timestamp)
+}
+```
+
+#### cache_info (опционально)
+
+**Тип:** object (CacheInfo)  
+**Описание:** Информация о кэшировании для текущего запроса  
+
+**Структура:**
+```json
+{
+  "cache_hit": true,         // был ли кэш
+  "cache_key": "template:query:hash", // ключ кэша
+  "cache_ttl": 300           // TTL кэша в секундах
+}
+```
+
+#### quota_info (опционально)
+
+**Тип:** object (QuotaInfo)  
+**Описание:** Информация о квотах для текущего клиента  
+
+**Структура:**
+```json
+{
+  "quota_used": 50000,   // использовано квоты
+  "quota_limit": 100000, // лимит квоты
+  "quota_type": "requests" // тип квоты (requests, data, storage, bandwidth)
+}
+```
 
 ## Использование метаданных
 

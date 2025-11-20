@@ -32,13 +32,37 @@ func NewRequestMetadata(protocolVersion, clientVersion string) *RequestMetadata 
 	}
 }
 
+// RateLimitInfo содержит информацию о rate limiting
+type RateLimitInfo struct {
+	Limit    int32 `json:"limit,omitempty"`     // лимит запросов
+	Remaining int32 `json:"remaining,omitempty"` // оставшиеся запросы
+	ResetAt  int64 `json:"reset_at,omitempty"`  // время сброса лимита (Unix timestamp)
+}
+
+// CacheInfo содержит информацию о кэшировании
+type CacheInfo struct {
+	CacheHit bool   `json:"cache_hit,omitempty"` // был ли кэш
+	CacheKey string `json:"cache_key,omitempty"` // ключ кэша
+	CacheTTL int32  `json:"cache_ttl,omitempty"` // TTL кэша в секундах
+}
+
+// QuotaInfo содержит информацию о квотах
+type QuotaInfo struct {
+	QuotaUsed  int64  `json:"quota_used,omitempty"`  // использовано квоты
+	QuotaLimit int64  `json:"quota_limit,omitempty"` // лимит квоты
+	QuotaType  string `json:"quota_type,omitempty"`  // тип квоты (requests, data, etc.)
+}
+
 // ResponseMetadata содержит метаданные ответа
 type ResponseMetadata struct {
-	RequestID        string `json:"request_id"`
-	ProtocolVersion  string `json:"protocol_version"`
-	ServerVersion    string `json:"server_version"`
-	Timestamp        int64  `json:"timestamp"`
-	ProcessingTimeMS int32  `json:"processing_time_ms"`
+	RequestID        string         `json:"request_id"`
+	ProtocolVersion  string         `json:"protocol_version"`
+	ServerVersion    string         `json:"server_version"`
+	Timestamp        int64          `json:"timestamp"`
+	ProcessingTimeMS int32          `json:"processing_time_ms"`
+	RateLimitInfo    *RateLimitInfo `json:"rate_limit_info,omitempty"`
+	CacheInfo        *CacheInfo     `json:"cache_info,omitempty"`
+	QuotaInfo        *QuotaInfo     `json:"quota_info,omitempty"`
 }
 
 var (

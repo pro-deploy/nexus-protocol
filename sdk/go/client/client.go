@@ -138,6 +138,44 @@ func (c *Client) getCustomHeaders() map[string]string {
 	return result
 }
 
+// SetPriority устанавливает приоритет запроса
+// Значения: "low", "normal", "high", "critical"
+func (c *Client) SetPriority(priority string) {
+	c.SetCustomHeader("x-priority", priority)
+}
+
+// SetRequestSource устанавливает источник запроса
+// Значения: "user", "system", "batch", "webhook"
+func (c *Client) SetRequestSource(source string) {
+	c.SetCustomHeader("x-request-source", source)
+}
+
+// SetCacheControl устанавливает контроль кэширования
+// Значения: "no-cache", "cache-only", "cache-first", "network-first"
+func (c *Client) SetCacheControl(cacheControl string) {
+	c.SetCustomHeader("x-cache-control", cacheControl)
+}
+
+// SetCacheTTL устанавливает TTL кэша в секундах
+func (c *Client) SetCacheTTL(ttl int32) {
+	c.SetCustomHeader("x-cache-ttl", fmt.Sprintf("%d", ttl))
+}
+
+// SetCacheKey устанавливает кастомный ключ кэша
+func (c *Client) SetCacheKey(key string) {
+	c.SetCustomHeader("x-cache-key", key)
+}
+
+// SetFeatureFlag устанавливает feature flag для A/B тестирования
+func (c *Client) SetFeatureFlag(flag, value string) {
+	c.SetCustomHeader(fmt.Sprintf("x-feature-%s", flag), value)
+}
+
+// SetExperiment устанавливает ID эксперимента
+func (c *Client) SetExperiment(experimentID string) {
+	c.SetCustomHeader("x-experiment-id", experimentID)
+}
+
 // createRequestMetadata создает RequestMetadata с настройками клиента
 func (c *Client) createRequestMetadata() *types.RequestMetadata {
 	metadata := types.NewRequestMetadata(c.protocolVersion, c.clientVersion)

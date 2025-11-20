@@ -11,6 +11,12 @@ const (
 	PathAPIV1TemplatesStatus  = "/api/v1/templates/status"
 	PathAPIV1TemplatesStream  = "/api/v1/templates/stream"
 
+	// Batch endpoints
+	PathAPIV1BatchExecute = "/api/v1/batch/execute"
+
+	// Webhooks endpoints
+	PathAPIV1Webhooks = "/api/v1/webhooks"
+
 	// IAM endpoints
 	PathAPIV1AuthRegister = "/api/v1/auth/register"
 	PathAPIV1AuthLogin    = "/api/v1/auth/login"
