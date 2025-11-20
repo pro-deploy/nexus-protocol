@@ -2,10 +2,6 @@
 ROADMAP.md
 ACTION_PLAN.md
 
-# Локальные инструменты Git (не для репозитория)
-GIT_LOCAL_USAGE.md
-git-tools.sh
-
 # IDE и редакторы
 .idea/
 .vscode/
@@ -20,7 +16,7 @@ git-tools.sh
 *.bak
 *.cache
 
-# Go
+# Go (если есть Go код в корне)
 *.exe
 *.exe~
 *.dll
@@ -30,22 +26,6 @@ git-tools.sh
 *.out
 vendor/
 go.work
-go.work.sum
-
-# Go бинарники (включая сервер)
-server/go/main
-server/go/simple_main
-server/go/nexus-server
-server/go/build/
-
-# Логи сервера
-*.log
-logs/
-server/go/*.log
-
-# Конфигурационные файлы с секретами
-server/go/config/config.local.yaml
-server/go/config/*.local.*
 
 # Бинарные файлы SDK (собранные примеры)
 sdk/go/batch
@@ -93,3 +73,5 @@ secrets/
 docs/_build/
 site/
 
+# Серверный код (хранится только локально)
+server/
