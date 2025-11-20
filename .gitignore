@@ -2,6 +2,10 @@
 ROADMAP.md
 ACTION_PLAN.md
 
+# Локальные инструменты Git (не для репозитория)
+GIT_LOCAL_USAGE.md
+git-tools.sh
+
 # IDE и редакторы
 .idea/
 .vscode/
