@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/nexus-protocol/go-sdk/types"
+	"github.com/pro-deploy/nexus-protocol/sdk/go/types"
 )
 
 func TestExecuteBatch(t *testing.T) {

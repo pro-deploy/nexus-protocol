@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/nexus-protocol/go-sdk/types"
+	"github.com/pro-deploy/nexus-protocol/sdk/go/types"
 )
 
 // LogEvent логирует событие аналитики для отслеживания.

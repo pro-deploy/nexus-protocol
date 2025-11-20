@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	nexus "github.com/nexus-protocol/go-sdk/client"
-	"github.com/nexus-protocol/go-sdk/types"
+	nexus "github.com/pro-deploy/nexus-protocol/sdk/go/client"
+	"github.com/pro-deploy/nexus-protocol/sdk/go/types"
 )
 
 func main() {

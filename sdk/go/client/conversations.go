@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/nexus-protocol/go-sdk/types"
+	"github.com/pro-deploy/nexus-protocol/sdk/go/types"
 )
 
 // CreateConversation создает новую беседу с AI.

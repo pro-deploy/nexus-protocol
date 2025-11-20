@@ -26,7 +26,7 @@
 ### Установка
 
 ```bash
-go get github.com/nexus-protocol/go-sdk
+go get github.com/pro-deploy/nexus-protocol/sdk/go
 ```
 
 ### Базовый advanced клиент
@@ -36,8 +36,8 @@ import (
     "context"
     "time"
     
-    "github.com/nexus-protocol/go-sdk/client"
-    "github.com/nexus-protocol/go-sdk/types"
+    "github.com/pro-deploy/nexus-protocol/sdk/go/client"
+    "github.com/pro-deploy/nexus-protocol/sdk/go/types"
 )
 
 cfg := client.Config{

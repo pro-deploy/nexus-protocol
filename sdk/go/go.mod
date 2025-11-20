@@ -1,4 +1,4 @@
-module github.com/nexus-protocol/go-sdk
+module github.com/pro-deploy/nexus-protocol/sdk/go
 
 go 1.21
 

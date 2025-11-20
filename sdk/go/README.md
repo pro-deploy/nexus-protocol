@@ -18,7 +18,7 @@ Go SDK для работы с Nexus Application Protocol.
 ## Установка
 
 ```bash
-go get github.com/nexus-protocol/go-sdk
+go get github.com/pro-deploy/nexus-protocol/sdk/go
 ```
 
 ## Быстрый старт
@@ -31,8 +31,8 @@ import (
     "fmt"
     "log"
     
-    "github.com/nexus-protocol/go-sdk/client"
-    "github.com/nexus-protocol/go-sdk/types"
+    "github.com/pro-deploy/nexus-protocol/sdk/go/client"
+    "github.com/pro-deploy/nexus-protocol/sdk/go/types"
 )
 
 func main() {
@@ -72,7 +72,7 @@ import (
     "context"
     "time"
     
-    "github.com/nexus-protocol/go-sdk/client"
+    "github.com/pro-deploy/nexus-protocol/sdk/go/client"
 )
 
 // Базовый клиент
@@ -450,7 +450,7 @@ cfg := client.Config{
 ### Логирование
 
 ```go
-import "github.com/nexus-protocol/go-sdk/client"
+import "github.com/pro-deploy/nexus-protocol/sdk/go/client"
 
 // Создание логгера
 logger := client.NewSimpleLogger(client.LogLevelDebug)

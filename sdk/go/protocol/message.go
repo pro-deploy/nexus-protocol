@@ -1,7 +1,7 @@
 package protocol
 
 import (
-	"github.com/nexus-protocol/go-sdk/types"
+	"github.com/pro-deploy/nexus-protocol/sdk/go/types"
 )
 
 // RequestMessage представляет запрос в формате Application Protocol.

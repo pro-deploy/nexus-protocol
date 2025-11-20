@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/nexus-protocol/go-sdk/types"
+	"github.com/pro-deploy/nexus-protocol/sdk/go/types"
 )
 
 // RegisterWebhook регистрирует новый webhook для получения уведомлений об асинхронных операциях.

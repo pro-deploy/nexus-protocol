@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nexus-protocol/go-sdk/types"
+	"github.com/pro-deploy/nexus-protocol/sdk/go/types"
 )
 
 // Integration тесты требуют запущенный сервер
