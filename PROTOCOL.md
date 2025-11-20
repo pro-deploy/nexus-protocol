@@ -20,7 +20,7 @@ Application Protocol определяет:
 {
   "metadata": {
     "request_id": "550e8400-e29b-41d4-a716-446655440000",
-    "protocol_version": "1.1.0",
+    "protocol_version": "2.0.0",
     "client_version": "1.0.0",
     "timestamp": 1640995200
   },
@@ -36,7 +36,7 @@ Application Protocol определяет:
 {
   "metadata": {
     "request_id": "uuid",
-    "protocol_version": "1.1.0",
+    "protocol_version": "2.0.0",
     "client_version": "1.0.0",
     "timestamp": 1640995200
   },
@@ -53,7 +53,7 @@ Application Protocol определяет:
 {
   "metadata": {
     "request_id": "uuid",
-    "protocol_version": "1.1.0",
+    "protocol_version": "2.0.0",
     "server_version": "1.0.2",
     "timestamp": 1640995235,
     "processing_time_ms": 3500
@@ -110,7 +110,7 @@ Application Protocol использует Semantic Versioning:
 - **MINOR** - обратно совместимые новые функции
 - **PATCH** - исправления ошибок
 
-Текущая версия: **1.1.0**
+Текущая версия: **2.0.0**
 
 ## См. также
 
