@@ -2,10 +2,10 @@ package types
 
 // AIConfig представляет конфигурацию AI провайдера
 type AIConfig struct {
-	Provider     string            `json:"provider"`      // openai, anthropic, local, custom
-	Model        string            `json:"model"`         // gpt-4, claude-3, llama-2 и т.д.
-	APIKey       string            `json:"api_key"`       // зашифрованный ключ
-	BaseURL      string            `json:"base_url"`      // для custom провайдеров
+	Provider     string            `json:"provider"` // openai, anthropic, local, custom
+	Model        string            `json:"model"`    // gpt-4, claude-3, llama-2 и т.д.
+	APIKey       string            `json:"api_key"`  // зашифрованный ключ
+	BaseURL      string            `json:"base_url"` // для custom провайдеров
 	MaxTokens    int               `json:"max_tokens"`
 	Temperature  float64           `json:"temperature"`
 	TopP         float64           `json:"top_p"`
@@ -16,14 +16,14 @@ type AIConfig struct {
 
 // DomainCapability описывает возможности домена
 type DomainCapability struct {
-	Type        string            `json:"type"`        // search, execute, analyze, etc.
+	Type        string            `json:"type"` // search, execute, analyze, etc.
 	Description string            `json:"description"`
 	Parameters  map[string]string `json:"parameters,omitempty"`
 }
 
 // DomainMLModel содержит конфигурацию ML модели домена
 type DomainMLModel struct {
-	Type       string            `json:"type"`       // classification, regression, nlp
+	Type       string            `json:"type"` // classification, regression, nlp
 	Version    string            `json:"version,omitempty"`
 	Accuracy   float32           `json:"accuracy,omitempty"`  // 0.0-1.0
 	Threshold  float32           `json:"threshold,omitempty"` // порог уверенности 0.0-1.0
@@ -34,12 +34,12 @@ type DomainMLModel struct {
 type DomainConfig struct {
 	ID           string             `json:"id"`
 	Name         string             `json:"name"`
-	Type         string             `json:"type"`         // commerce, recipes, travel, knowledge, health, finance, custom
+	Type         string             `json:"type"` // commerce, recipes, travel, knowledge, health, finance, custom
 	Enabled      bool               `json:"enabled"`
-	Endpoint     string             `json:"endpoint"`     // URL микросервиса
-	AuthType     string             `json:"auth_type"`    // none, api_key, oauth2, jwt
-	AuthConfig   map[string]string  `json:"auth_config"`  // конфигурация авторизации
-	Timeout      int                `json:"timeout"`      // в секундах
+	Endpoint     string             `json:"endpoint"`    // URL микросервиса
+	AuthType     string             `json:"auth_type"`   // none, api_key, oauth2, jwt
+	AuthConfig   map[string]string  `json:"auth_config"` // конфигурация авторизации
+	Timeout      int                `json:"timeout"`     // в секундах
 	RetryCount   int                `json:"retry_count"`
 	Priority     int                `json:"priority"`      // приоритет выполнения (0-100)
 	Keywords     []string           `json:"keywords"`      // ключевые слова для распознавания
@@ -53,15 +53,15 @@ type DomainConfig struct {
 
 // IntegrationConfig представляет конфигурацию интеграции
 type IntegrationConfig struct {
-	ID          string            `json:"id"`
-	Name        string            `json:"name"`
-	Type        string            `json:"type"`         // payment, delivery, notifications, analytics, custom
-	Provider    string            `json:"provider"`
-	Enabled     bool              `json:"enabled"`
+	ID          string                 `json:"id"`
+	Name        string                 `json:"name"`
+	Type        string                 `json:"type"` // payment, delivery, notifications, analytics, custom
+	Provider    string                 `json:"provider"`
+	Enabled     bool                   `json:"enabled"`
 	Config      map[string]interface{} `json:"config"`
-	Credentials map[string]string `json:"credentials"`
-	WebhookURL  string            `json:"webhook_url"`
-	Metadata    map[string]string `json:"metadata"`
+	Credentials map[string]string      `json:"credentials"`
+	WebhookURL  string                 `json:"webhook_url"`
+	Metadata    map[string]string      `json:"metadata"`
 }
 
 // PromptConfig представляет конфигурацию промпта
@@ -86,7 +86,6 @@ type QualityRule struct {
 	Weight      float32 `json:"weight"`    // вес правила 0.0-1.0
 	Description string  `json:"description"`
 }
-
 
 // ExecuteTemplateRequest представляет запрос на выполнение шаблона
 type ExecuteTemplateRequest struct {
@@ -274,7 +273,6 @@ type DomainSelection struct {
 	Metadata     map[string]string  `json:"metadata,omitempty"`
 	Capabilities []DomainCapability `json:"capabilities,omitempty"`
 }
-
 
 // ResponseQualityAnalysis содержит анализ качества ответа домена
 type ResponseQualityAnalysis struct {
