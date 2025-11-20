@@ -16,7 +16,7 @@ ACTION_PLAN.md
 *.bak
 *.cache
 
-# Go (если есть Go код в корне)
+# Go
 *.exe
 *.exe~
 *.dll
@@ -26,6 +26,22 @@ ACTION_PLAN.md
 *.out
 vendor/
 go.work
+go.work.sum
+
+# Go бинарники (включая сервер)
+server/go/main
+server/go/simple_main
+server/go/nexus-server
+server/go/build/
+
+# Логи сервера
+*.log
+logs/
+server/go/*.log
+
+# Конфигурационные файлы с секретами
+server/go/config/config.local.yaml
+server/go/config/*.local.*
 
 # Бинарные файлы SDK (собранные примеры)
 sdk/go/batch
