@@ -1,0 +1,134 @@
+version: '3.8'
+
+services:
+  # Keycloak Identity Provider
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0.0
+    container_name: nexus-keycloak
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak_db
+      - KC_DB_USERNAME=keycloak
+      - KC_DB_PASSWORD=keycloak_password
+      - KC_HOSTNAME=nexus-keycloak
+      - KC_HTTP_PORT=8080
+      - KC_HTTPS_PORT=8443
+    ports:
+      - "8081:8080"  # Changed from 8080 to avoid conflict with nexus-api
+    depends_on:
+      - postgres
+    networks:
+      - nexus-network
+    restart: unless-stopped
+    command: ["start-dev", "--import-realm"]  # Use start-dev for development
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080;echo -e 'GET /health/ready HTTP/1.1\r\nhost: localhost\r\nConnection: close\r\n\r\n' >&3;grep -q '200 OK' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+      - ./keycloak-realm.json:/opt/keycloak/data/import/realm.json
+  # Nexus Protocol API Server
+  nexus-api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: nexus-api
+    ports:
+      - "8080:8080"
+      - "9090:9090"  # Metrics endpoint
+    environment:
+      - NEXUS_SERVER_PORT=8080
+      - NEXUS_METRICS_PORT=9090
+      - NEXUS_DATABASE_HOST=postgres
+      - NEXUS_DATABASE_PORT=5432
+      - NEXUS_DATABASE_USER=nexus
+      - NEXUS_DATABASE_PASSWORD=nexus_password
+      - NEXUS_DATABASE_DBNAME=nexus_db
+      - NEXUS_REDIS_HOST=redis
+      - NEXUS_REDIS_PORT=6379
+      - NEXUS_AUTH_JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - NEXUS_AI_PROVIDER=openai
+      - NEXUS_AI_API_KEY=your-openai-api-key
+      - NEXUS_LOG_LEVEL=info
+      - NEXUS_PROTOCOL_VERSION=1.1.0
+      - NEXUS_ENABLE_ENTERPRISE_FEATURES=true
+      - NEXUS_RATE_LIMIT_ENABLED=true
+      - NEXUS_RATE_LIMIT_REQUESTS_PER_MINUTE=1000
+      - NEXUS_CACHE_ENABLED=true
+      - NEXUS_WEBHOOK_ENABLED=true
+      - NEXUS_BATCH_OPERATIONS_ENABLED=true
+    volumes:
+      - ./config:/app/config
+      - ./logs:/app/logs
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - nexus-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: nexus-postgres
+    environment:
+      - POSTGRES_USER=nexus
+      - POSTGRES_PASSWORD=nexus_password
+      - POSTGRES_DB=nexus_db
+      # Keycloak database
+      - POSTGRES_MULTIPLE_DATABASES=keycloak_db
+      - KEYCLOAK_DB_USER=keycloak
+      - KEYCLOAK_DB_PASSWORD=keycloak_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    ports:
+      - "5432:5432"
+    networks:
+      - nexus-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexus"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: nexus-redis
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - nexus-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  keycloak_data:
+    driver: local
+
+networks:
+  nexus-network:
+    driver: bridge
