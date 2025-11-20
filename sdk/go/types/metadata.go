@@ -94,10 +94,10 @@ func ValidateUUID(uuidStr string) error {
 	return nil
 }
 
-// IsCompatible проверяет совместимость версий протокола
+// IsCompatible проверяет совместимость версий протокола согласно Nexus Protocol v2.0.0
 // Версии совместимы если:
-// 1. Major версии совпадают
-// 2. Minor версия клиента <= Minor версии сервера
+// 1. Major версии совпадают (несовместимые изменения)
+// 2. Minor версия клиента <= Minor версии сервера (новые функции в сервере)
 func IsCompatible(clientVersion, serverVersion string) (bool, error) {
 	if err := ValidateVersion(clientVersion); err != nil {
 		return false, fmt.Errorf("invalid client version: %w", err)
@@ -137,14 +137,15 @@ func IsCompatible(clientVersion, serverVersion string) (bool, error) {
 		return false, fmt.Errorf("invalid server minor version: %w", err)
 	}
 
-	// Major версии должны совпадать
+	// Major версии должны совпадать для совместимости
 	if clientMajor != serverMajor {
-		return false, nil
+		return false, fmt.Errorf("incompatible protocol versions: client major %d != server major %d", clientMajor, serverMajor)
 	}
 
 	// Minor версия клиента не должна быть больше сервера
 	if clientMinor > serverMinor {
-		return false, nil
+		return false, fmt.Errorf("client protocol version %s requires server %d.%d.x or higher, but server supports %s",
+			clientVersion, clientMajor, clientMinor, serverVersion)
 	}
 
 	return true, nil

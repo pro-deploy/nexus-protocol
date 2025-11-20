@@ -14,10 +14,10 @@ import (
 
 const (
 	// DefaultProtocolVersion версия протокола по умолчанию
-	// Соответствует версии Application Protocol
-	DefaultProtocolVersion = "1.1.0"
+	// Соответствует версии Application Protocol v2.0.0
+	DefaultProtocolVersion = "2.0.0"
 	// DefaultClientVersion версия клиента по умолчанию
-	DefaultClientVersion = "1.0.0"
+	DefaultClientVersion = "2.0.0"
 	// DefaultTimeout таймаут по умолчанию
 	DefaultTimeout = 30 * time.Second
 )
@@ -523,4 +523,5 @@ func (c *Client) Ready(ctx context.Context) (*types.ReadinessResponse, error) {
 
 	return &result, nil
 }
+
 

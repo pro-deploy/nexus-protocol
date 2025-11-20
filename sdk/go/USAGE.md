@@ -463,7 +463,7 @@ if result.Ranking != nil {
 }
 ```
 
-## Enterprise возможности (v1.1.0) ✨
+## Enterprise возможности (v2.0.0) ✨
 
 ### Настройка enterprise параметров
 
@@ -749,6 +749,199 @@ if ready.Capacity != nil {
     fmt.Printf("Max Capacity: %d req/sec\n", ready.Capacity.MaxCapacity)
     fmt.Printf("Available Capacity: %d req/sec\n", ready.Capacity.AvailableCapacity)
     fmt.Printf("Active Connections: %d\n", ready.Capacity.ActiveConnections)
+}
+```
+
+## Admin API (v2.0.0) 🔧
+
+Admin API предоставляет полный контроль над конфигурацией системы для администраторов.
+Требует соответствующих прав доступа (superuser/admin роли).
+
+### Получение Admin клиента
+
+```go
+// Получаем admin клиент
+admin := client.Admin()
+```
+
+### Управление AI конфигурацией
+
+```go
+// Получить текущую конфигурацию AI
+aiConfig, err := admin.GetAIConfig(ctx)
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Printf("AI Provider: %s, Model: %s\n", aiConfig.Provider, aiConfig.Model)
+
+// Обновить конфигурацию AI
+newConfig := &types.AIConfig{
+    Provider:   "openai",
+    Model:      "gpt-4-turbo",
+    APIKey:     "encrypted_key",
+    MaxTokens:  4000,
+    Temperature: 0.7,
+    TopP:       1.0,
+    Timeout:    60,
+    Enabled:    true,
+}
+
+err = admin.UpdateAIConfig(ctx, newConfig)
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+### Управление промптами
+
+```go
+// Получить список промптов для домена commerce
+prompts, err := admin.ListPrompts(ctx, "commerce")
+if err != nil {
+    log.Fatal(err)
+}
+
+for _, prompt := range prompts {
+    fmt.Printf("Prompt: %s (%s)\n", prompt.Name, prompt.Type)
+}
+
+// Создать новый промпт
+newPrompt := &types.PromptConfig{
+    Name:        "Commerce Search v2",
+    Description: "Улучшенный промпт для поиска товаров",
+    Domain:      "commerce",
+    Type:        "system",
+    Template:    "Ты помощник для поиска товаров. Запрос: {{query}}",
+    Variables:   []string{"query"},
+    Version:     1,
+    Active:      true,
+}
+
+createdPrompt, err := admin.CreatePrompt(ctx, newPrompt)
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+### Управление доменами
+
+```go
+// Получить список всех доменов
+domains, err := admin.ListDomains(ctx)
+if err != nil {
+    log.Fatal(err)
+}
+
+for _, domain := range domains {
+    fmt.Printf("Domain: %s (%s) - %s\n", domain.Name, domain.Type, domain.Endpoint)
+}
+
+// Обновить ключевые слова домена
+keywords := []string{"купить", "заказать", "товар", "цена", "доставка", "оплата"}
+err = admin.UpdateDomainKeywords(ctx, "commerce", keywords)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Обновить правила качества домена
+qualityRules := []types.QualityRule{
+    {
+        Metric:      "relevance",
+        Condition:   "min_relevance",
+        Threshold:   0.7,
+        Weight:      0.3,
+        Description: "Релевантность должна быть выше 0.7",
+    },
+    {
+        Metric:      "completeness",
+        Condition:   "has_price",
+        Threshold:   1.0,
+        Weight:      0.25,
+        Description: "Должен содержать информацию о цене",
+    },
+}
+
+err = admin.UpdateDomainQualityRules(ctx, "commerce", qualityRules)
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+### Управление интеграциями
+
+```go
+// Получить список платежных интеграций
+integrations, err := admin.ListIntegrations(ctx, "payment")
+if err != nil {
+    log.Fatal(err)
+}
+
+for _, integration := range integrations {
+    fmt.Printf("Integration: %s (%s) - %s\n", integration.Name, integration.Provider, integration.Type)
+}
+
+// Создать новую интеграцию
+newIntegration := &types.IntegrationConfig{
+    Name:        "Stripe Payment",
+    Type:        "payment",
+    Provider:    "stripe",
+    Enabled:     true,
+    Config:      map[string]interface{}{"currency": "RUB"},
+    Credentials: map[string]string{"api_key": "encrypted_key"},
+    WebhookURL:  "https://api.nexus.dev/webhooks/stripe",
+}
+
+createdIntegration, err := admin.CreateIntegration(ctx, newIntegration)
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+### Управление frontend конфигурациями
+
+```go
+// Получить активную конфигурацию
+activeConfig, err := admin.GetActiveFrontendConfig(ctx)
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Printf("Active theme: %s\n", activeConfig.Theme)
+
+// Создать новую конфигурацию
+newConfig := &types.FrontendConfig{
+    Name:   "Dark Theme v2",
+    Theme:  "dark",
+    Colors: map[string]string{
+        "primary":   "#6200ea",
+        "secondary": "#03dac6",
+        "accent":    "#ff4081",
+        "background": "#121212",
+        "text":      "#ffffff",
+    },
+    Active: true,
+}
+
+createdConfig, err := admin.CreateFrontendConfig(ctx, newConfig)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Установить как активную
+err = admin.SetActiveFrontendConfig(ctx, createdConfig.ID)
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+### Инициализация доменов по умолчанию
+
+```go
+// Создать стандартные домены с настройками по умолчанию
+err = admin.InitializeDefaultDomains(ctx)
+if err != nil {
+    log.Printf("Failed to initialize domains: %v", err)
+} else {
+    fmt.Println("Default domains initialized successfully")
 }
 ```
 

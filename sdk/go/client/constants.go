@@ -1,6 +1,6 @@
 package client
 
-// API пути для версии 1
+// API пути для версии 2.0.0
 const (
 	// Health endpoints
 	PathHealth = "/health"
@@ -30,5 +30,13 @@ const (
 	PathAPIV1AnalyticsEvents = "/api/v1/analytics/events"
 	PathAPIV1AnalyticsStats  = "/api/v1/analytics/stats"
 	PathAPIV1FrontendConfig  = "/api/v1/frontend/config"
+
+	// Admin endpoints (v2.0.0 enterprise features)
+	PathAPIV1AdminAIConfig        = "/api/v1/admin/ai/config"
+	PathAPIV1AdminPrompts         = "/api/v1/admin/prompts"
+	PathAPIV1AdminDomains         = "/api/v1/admin/domains"
+	PathAPIV1AdminIntegrations    = "/api/v1/admin/integrations"
+	PathAPIV1AdminFrontendConfigs = "/api/v1/admin/frontend/configs"
+	PathAPIV1AdminVersion         = "/api/v1/admin/version"
 )
 
