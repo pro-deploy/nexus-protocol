@@ -1,3 +1,7 @@
+# ============================================================================
+# Go SDK - Git Ignore Configuration
+# ============================================================================
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -8,23 +12,176 @@
 # Test binary, built with `go test -c`
 *.test
 
-# Output of the go coverage tool
+# Output of the go coverage tool, go test -race
 *.out
+*.prof
 
 # Dependency directories
 vendor/
 
-# Go workspace file
+# Go workspace files
 go.work
+go.work.sum
 
-# IDE
+# Go build cache
+.cache/
+
+# Air live reloading
+tmp/
+
+# ============================================================================
+# IDE и редакторы
+# ============================================================================
+
+# IntelliJ IDEA
 .idea/
+*.iws
+*.iml
+*.ipr
+
+# VS Code
 .vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Cursor
+.cursor/
+*.cursor
+
+# Vim
 *.swp
 *.swo
 *~
+Session.vim
+.netrwhist
 
-# Build artifacts
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# ============================================================================
+# Build артефакты
+# ============================================================================
+
+# Build outputs
 dist/
 build/
+bin/
+target/
+
+# Cross-compilation artifacts
+*.linux
+*.darwin
+*.windows
+*.arm
+*.amd64
+
+# Docker builds
+.dockerignore
+
+# ============================================================================
+# Тестирование и покрытие
+# ============================================================================
+
+# Test coverage
+coverage.html
+coverage.xml
+coverage.txt
+*.coverprofile
+
+# Benchmark results
+bench.out
+cpu.prof
+mem.prof
+
+# Fuzzing artifacts
+corpus/
+crashers/
+
+# ============================================================================
+# Временные файлы
+# ============================================================================
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.log
+
+# ============================================================================
+# Конфигурация и секреты
+# ============================================================================
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Secrets and keys
+*.key
+*.pem
+*.crt
+*.cer
+secrets/
+keys/
+
+# Configuration overrides
+config.local.*
+*.local.yml
+*.local.yaml
+
+# ============================================================================
+# CI/CD
+# ============================================================================
+
+# CI artifacts
+artifacts/
+reports/
+
+# Release artifacts
+*.deb
+*.rpm
+*.tar.gz
+*.zip
+
+# ============================================================================
+# Проект-специфичные
+# ============================================================================
+
+# SDK examples binaries
+examples/**/main
+examples/**/enterprise
+examples/**/*.exe
+
+# Development binaries
+main
+simple_main
+batch
+webhooks
+
+# Documentation builds
+docs/build/
+docs/.vuepress/dist/
+
+# ============================================================================
+# Legacy файлы
+# ============================================================================
+
+# Old versions
+v1/
+legacy/
+archive/
 
