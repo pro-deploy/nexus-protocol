@@ -16,8 +16,8 @@ func main() {
 	cfg := nexus.Config{
 		BaseURL:         getEnv("NEXUS_BASE_URL", "http://localhost:8080"),
 		Token:           getEnv("NEXUS_TOKEN", ""),
-		ProtocolVersion: "1.0.0",
-		ClientVersion:   "1.0.0",
+		ProtocolVersion: "2.0.0", // Nexus Protocol v2.0.0
+		ClientVersion:   "2.0.0",
 		ClientID:        "go-sdk-example",
 		ClientType:      "sdk",
 	}

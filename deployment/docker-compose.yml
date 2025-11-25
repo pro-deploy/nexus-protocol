@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # Nexus Protocol API Server
   nexus-api:
-    image: nexus-protocol/api:1.1.0
+    image: nexus-protocol/api:2.0.0
     container_name: nexus-api
     ports:
       - "8080:8080"
@@ -16,7 +16,7 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
       - LOG_LEVEL=info
-      - PROTOCOL_VERSION=1.1.0
+      - PROTOCOL_VERSION=2.0.0
       - ENABLE_ENTERPRISE_FEATURES=true
       - RATE_LIMIT_ENABLED=true
       - RATE_LIMIT_REQUESTS_PER_MINUTE=1000
@@ -43,7 +43,7 @@ services:
       start_period: 40s
     labels:
       - "com.nexus.service=api"
-      - "com.nexus.version=1.1.0"
+      - "com.nexus.version=2.0.0"
 
   # PostgreSQL Database
   postgres:

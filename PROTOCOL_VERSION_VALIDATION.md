@@ -27,7 +27,7 @@ Middleware проверяет версию в следующем порядке:
 
 ### Правила совместимости
 
-Согласно протоколу @protocol v1.1.0:
+Согласно протоколу Nexus Protocol v2.0.0:
 
 | Client Version | Server Version | Compatible | Notes |
 |----------------|----------------|------------|-------|
@@ -56,14 +56,14 @@ Middleware проверяет версию в следующем порядке:
 ```json
 {
   "error": {
-    "error_code": "PROTOCOL_VERSION_INCOMPATIBLE",
-    "error_type": "PROTOCOL_VERSION_ERROR",
+    "code": "PROTOCOL_VERSION_MISMATCH",
+    "type": "PROTOCOL_VERSION_ERROR",
     "message": "Protocol version not supported",
     "details": "client protocol version 2.1.0 requires server 2.1.x or higher, but server supports 2.0.0",
     "metadata": {
       "client_version": "2.1.0",
       "server_version": "2.0.0",
-      "supported_versions": "1.0.x, 1.1.x"
+      "supported_versions": "2.0.x"
     }
   }
 }
@@ -92,7 +92,7 @@ curl "http://localhost:8080/api/v1/health?protocol_version=1.0.0"
 # Status: 400 с ошибкой PROTOCOL_VERSION_ERROR
 
 # Через заголовок
-curl -H "X-Protocol-Version: 1.1.0" http://localhost:8080/api/v1/health
+curl -H "X-Protocol-Version: 2.0.0" http://localhost:8080/api/v1/health
 ```
 
 ### Автоматическое тестирование
@@ -106,7 +106,7 @@ curl -H "X-Protocol-Version: 1.1.0" http://localhost:8080/api/v1/health
 
 ```go
 // Проверка формата версии
-err := types.ValidateProtocolVersion("1.1.0") // nil
+err := types.ValidateProtocolVersion("2.0.0") // nil
 
 // Проверка совместимости
 err := types.CheckProtocolCompatibility("2.0.0", "2.0.0") // nil (совместимо)
@@ -157,4 +157,4 @@ const (
 
 ---
 
-**Результат:** Сервер теперь на 100% соответствует протоколу @protocol v1.1.0! 🚀
+**Результат:** Сервер теперь на 100% соответствует протоколу Nexus Protocol v2.0.0! 🚀

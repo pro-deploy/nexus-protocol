@@ -113,7 +113,7 @@ curl -X POST https://api.nexus.dev/api/v1/templates/execute \
     "metadata": {
       "request_id": "req-456",
       "protocol_version": "2.0.0",
-      "client_version": "1.0.0"
+      "client_version": "2.0.0"
     }
   }'
 ```
@@ -164,7 +164,7 @@ curl -X POST https://api.nexus.dev/api/v1/templates/execute \
   },
   "metadata": {
     "request_id": "req-456",
-    "protocol_version": "1.1.0",
+    "protocol_version": "2.0.0",
     "server_version": "2.0.0",
     "processing_time_ms": 245
   }
@@ -180,8 +180,8 @@ resp, err := client.ExecuteTemplate(ctx, &pb.ExecuteTemplateRequest{
     Query: "хочу борщ",
     Metadata: &pb.RequestMetadata{
         RequestId:      uuid.New().String(),
-        Version:        "1.0.0",
-        ClientVersion:  "1.0.0",
+        Version:        "2.0.0", // Nexus Protocol v2.0.0
+        ClientVersion:  "2.0.0",
     },
 })
 ```
@@ -349,7 +349,7 @@ cat message.json | jq . | jsonschema schemas/message-schema.json
 
 ## Совместимость
 
-- **Protocol Version:** 1.0.0
+- **Protocol Version:** 2.0.0
 - **Semantic Versioning:** MAJOR.MINOR.PATCH
 - **Backward Compatibility:** В рамках Major версии
 - **Transport Protocols:** HTTP/1.1, HTTP/2, WebSocket (RFC 6455)
@@ -371,6 +371,6 @@ MIT License
 
 ---
 
-**Версия:** 1.1.0
+**Версия:** 2.0.0
 **Дата:** 2025-01-18
 **Автор:** Биркин Максим

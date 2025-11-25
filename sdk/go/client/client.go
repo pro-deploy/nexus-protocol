@@ -57,8 +57,8 @@ type Config struct {
 
 // NewClient создает новый клиент Nexus Protocol с указанной конфигурацией.
 // Если параметры не указаны, используются значения по умолчанию:
-// - ProtocolVersion: "1.0.0"
-// - ClientVersion: "1.0.0"
+// - ProtocolVersion: "2.0.0" (Nexus Protocol v2.0.0)
+// - ClientVersion: "2.0.0"
 // - Timeout: 30 секунд
 func NewClient(config Config) *Client {
 	if config.Timeout == 0 {

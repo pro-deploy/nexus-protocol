@@ -29,7 +29,7 @@ func TestAdvancedScenario(t *testing.T) {
 				},
 				Total: 2, Successful: 2, Failed: 0, TotalTimeMS: 250,
 				ResponseMetadata: &types.ResponseMetadata{
-					RequestID: "batch-req-123", ProtocolVersion: "1.1.0", ServerVersion: "1.1.0",
+					RequestID: "batch-req-123", ProtocolVersion: "2.0.0", ServerVersion: "2.0.0",
 					Timestamp: time.Now().Unix(), ProcessingTimeMS: 250,
 					RateLimitInfo: &types.RateLimitInfo{Limit: 1000, Remaining: 998, ResetAt: time.Now().Add(time.Hour).Unix()},
 					CacheInfo: &types.CacheInfo{CacheHit: false, CacheKey: "batch:hash", CacheTTL: 300},
@@ -43,7 +43,7 @@ func TestAdvancedScenario(t *testing.T) {
 				response := types.RegisterWebhookResponse{
 					WebhookID: "enterprise-webhook-123", Status: "registered",
 					ResponseMetadata: &types.ResponseMetadata{
-						RequestID: "webhook-req-456", ProtocolVersion: "1.1.0", ServerVersion: "1.1.0",
+						RequestID: "webhook-req-456", ProtocolVersion: "2.0.0", ServerVersion: "2.0.0",
 						Timestamp: time.Now().Unix(),
 					},
 				}
@@ -56,7 +56,7 @@ func TestAdvancedScenario(t *testing.T) {
 					},
 					Total: 1, Limit: 10, Offset: 0,
 					ResponseMetadata: &types.ResponseMetadata{
-						RequestID: "list-req-789", ProtocolVersion: "1.1.0", ServerVersion: "1.1.0",
+						RequestID: "list-req-789", ProtocolVersion: "2.0.0", ServerVersion: "2.0.0",
 						Timestamp: time.Now().Unix(),
 					},
 				}
@@ -67,7 +67,7 @@ func TestAdvancedScenario(t *testing.T) {
 			// Template execution with enterprise features
 			response := map[string]interface{}{
 				"metadata": &types.ResponseMetadata{
-					RequestID: "template-req-111", ProtocolVersion: "1.1.0", ServerVersion: "1.1.0",
+					RequestID: "template-req-111", ProtocolVersion: "2.0.0", ServerVersion: "2.0.0",
 					Timestamp: time.Now().Unix(), ProcessingTimeMS: 450,
 					RateLimitInfo: &types.RateLimitInfo{Limit: 1000, Remaining: 997, ResetAt: time.Now().Add(time.Hour).Unix()},
 					CacheInfo: &types.CacheInfo{CacheHit: true, CacheKey: "template:hash", CacheTTL: 300},
@@ -135,7 +135,7 @@ func TestAdvancedScenario(t *testing.T) {
 	// Создаем клиент с расширенными возможностями
 	client := NewClient(Config{
 		BaseURL:         server.URL,
-		ProtocolVersion: "1.1.0",
+		ProtocolVersion: "2.0.0",
 		ClientVersion:   "2.0.0",
 		ClientID:        "enterprise-test",
 		ClientType:      "api",

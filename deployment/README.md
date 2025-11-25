@@ -59,4 +59,4 @@ kubectl apply -f kubernetes/
 
 ---
 
-**Nexus Protocol v1.1.0** - Enterprise Ready! 🚀
+**Nexus Protocol v2.0.0** - Enterprise Ready! 🚀

@@ -51,8 +51,8 @@ cfg := nexus.Config{
     BaseURL:         "https://api.nexus.dev",
     Token:           "jwt-token",
     Timeout:         30 * time.Second,
-    ProtocolVersion: "1.0.0",
-    ClientVersion:   "1.0.0",
+    ProtocolVersion: "2.0.0", // Nexus Protocol v2.0.0
+    ClientVersion:   "2.0.0",
     ClientID:        "my-application",
     ClientType:      "web", // web, mobile, sdk, api, desktop
 }
@@ -285,7 +285,7 @@ req := &types.ExecuteTemplateRequest{
 ### С кастомными метаданными
 
 ```go
-metadata := types.NewRequestMetadata("1.0.0", "1.0.0")
+metadata := types.NewRequestMetadata("2.0.0", "2.0.0") // Nexus Protocol v2.0.0
 metadata.ClientID = "my-app"
 metadata.ClientType = "web"
 metadata.CustomHeaders = map[string]string{
@@ -1009,8 +1009,8 @@ if result.ResponseMetadata != nil {
 
 ```go
 cfg := nexus.Config{
-    ProtocolVersion: "1.0.0", // Указывайте версию явно
-    ClientVersion:   "1.0.0",
+    ProtocolVersion: "2.0.0", // Nexus Protocol v2.0.0 - указывайте версию явно
+    ClientVersion:   "2.0.0",
 }
 ```
 

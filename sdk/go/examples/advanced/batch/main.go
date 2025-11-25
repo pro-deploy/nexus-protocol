@@ -15,7 +15,7 @@ func main() {
 	cfg := nexus.Config{
 		BaseURL:         "http://localhost:8080",
 		Token:           "enterprise-jwt-token",
-		ProtocolVersion: "1.1.0",
+		ProtocolVersion: "2.0.0", // Nexus Protocol v2.0.0
 		ClientVersion:   "2.0.0",
 		ClientID:        "enterprise-batch-processor",
 		ClientType:      "api",

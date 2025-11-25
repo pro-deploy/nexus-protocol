@@ -50,8 +50,8 @@ func TestExecuteBatch(t *testing.T) {
 			TotalTimeMS: 250,
 			ResponseMetadata: &types.ResponseMetadata{
 				RequestID:      "req-123",
-				ProtocolVersion: "1.1.0",
-				ServerVersion:   "1.1.0",
+				ProtocolVersion: "2.0.0",
+				ServerVersion:   "2.0.0",
 				Timestamp:       1640995200,
 				ProcessingTimeMS: 250,
 			},

@@ -34,7 +34,7 @@ func (t *TimingInterceptor) AfterResponse(ctx context.Context, req *http.Request
 type AuthInterceptor struct{}
 
 func (a *AuthInterceptor) BeforeRequest(ctx context.Context, req *http.Request) error {
-	req.Header.Set("X-Client-Version", "1.0.0")
+	req.Header.Set("X-Client-Version", "2.0.0")
 	req.Header.Set("X-Request-Timestamp", fmt.Sprintf("%d", time.Now().Unix()))
 	return nil
 }

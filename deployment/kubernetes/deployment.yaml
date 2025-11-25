@@ -5,7 +5,7 @@ metadata:
   namespace: nexus
   labels:
     app: nexus-api
-    version: "1.1.0"
+    version: "2.0.0"
     component: api
 spec:
   replicas: 3
@@ -21,12 +21,12 @@ spec:
     metadata:
       labels:
         app: nexus-api
-        version: "1.1.0"
+        version: "2.0.0"
         component: api
     spec:
       containers:
       - name: nexus-api
-        image: nexus-protocol/api:1.1.0
+        image: nexus-protocol/api:2.0.0
         imagePullPolicy: IfNotPresent
         ports:
         - name: http
@@ -60,7 +60,7 @@ spec:
         - name: LOG_LEVEL
           value: "info"
         - name: PROTOCOL_VERSION
-          value: "1.1.0"
+          value: "2.0.0"
         - name: ENABLE_ENTERPRISE_FEATURES
           value: "true"
         - name: RATE_LIMIT_ENABLED

@@ -44,8 +44,8 @@ func main() {
     cfg := client.Config{
         BaseURL:         "http://localhost:8080",
         Token:           "your-jwt-token",
-        ProtocolVersion: "1.0.0",
-        ClientVersion:   "1.0.0",
+        ProtocolVersion: "2.0.0", // Nexus Protocol v2.0.0
+        ClientVersion:   "2.0.0",
     }
     
     nexusClient := client.NewClient(cfg)
@@ -84,8 +84,8 @@ cfg := client.Config{
     BaseURL:         "https://api.nexus.dev",
     Token:           "jwt-token",
     Timeout:         30 * time.Second,
-    ProtocolVersion: "1.0.0",
-    ClientVersion:   "1.0.0",
+    ProtocolVersion: "2.0.0", // Nexus Protocol v2.0.0
+    ClientVersion:   "2.0.0",
     ClientID:        "my-app",
     ClientType:      "web",
 }
@@ -356,7 +356,7 @@ req := &types.ExecuteTemplateRequest{
 }
 
 // Или создайте вручную
-metadata := types.NewRequestMetadata("1.0.0", "1.0.0")
+metadata := types.NewRequestMetadata("2.0.0", "2.0.0") // Nexus Protocol v2.0.0
 metadata.ClientID = "my-app"
 metadata.ClientType = "web"
 
@@ -593,7 +593,7 @@ make run-interceptors  # Interceptors пример
 make run-metrics       # Metrics пример
 ```
 
-## Enterprise возможности (v1.1.0) ✨
+## Enterprise возможности (v2.0.0) ✨
 
 ### Для среднего бизнеса (50-500 сотрудников)
 - **Внедрение за 1-3 дня** вместо 2-6 месяцев

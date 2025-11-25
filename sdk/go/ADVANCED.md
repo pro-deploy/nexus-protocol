@@ -1,10 +1,10 @@
 # Nexus Protocol Go SDK - Advanced Guide
 
-Полное руководство по использованию advanced возможностей Nexus Protocol SDK v1.1.0.
+Полное руководство по использованию advanced возможностей Nexus Protocol SDK v2.0.0.
 
 ## 🎯 Advanced возможности
 
-### ✨ Новые фичи в v1.1.0
+### ✨ Расширенные возможности в v2.0.0
 
 1. **Advanced метрики** - Rate limiting, кэширование, квоты
 2. **Batch операции** - Параллельное выполнение множественных запросов
@@ -43,7 +43,7 @@ import (
 cfg := client.Config{
     BaseURL:         "https://api.company.com",
     Token:           "advanced-jwt-token",
-    ProtocolVersion: "1.1.0", // Используйте 1.1.0 для advanced фич
+    ProtocolVersion: "2.0.0", // Nexus Protocol v2.0.0 с расширенными возможностями
     ClientVersion:   "2.0.0",
     ClientID:        "advanced-app",
     ClientType:      "api",
@@ -206,4 +206,4 @@ if ready.Capacity != nil {
 
 ---
 
-**Nexus Protocol SDK v1.1.0** - Advanced Ready! 🚀
+**Nexus Protocol SDK v2.0.0** - Advanced Ready! 🚀

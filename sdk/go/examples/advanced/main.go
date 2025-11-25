@@ -11,11 +11,11 @@ import (
 )
 
 func main() {
-	// Конфигурация для расширенных возможностей (v1.1.0)
+	// Конфигурация для расширенных возможностей (v2.0.0)
 	cfg := nexus.Config{
 		BaseURL:         "http://localhost:8080",
 		Token:           "jwt-token",
-		ProtocolVersion: "1.1.0", // Включаем расширенные возможности
+		ProtocolVersion: "2.0.0", // Nexus Protocol v2.0.0 с расширенными возможностями
 		ClientVersion:   "2.0.0",
 		ClientID:        "advanced-app",
 		ClientType:      "api",
@@ -30,7 +30,7 @@ func main() {
 	client := nexus.NewClient(cfg)
 	ctx := context.Background()
 
-	fmt.Println("🚀 Nexus Protocol Advanced Features Demo (v1.1.0)")
+	fmt.Println("🚀 Nexus Protocol Advanced Features Demo (v2.0.0)")
 	fmt.Println("=================================")
 
 	// 1. Настройка enterprise параметров

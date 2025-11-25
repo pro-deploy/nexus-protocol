@@ -67,7 +67,7 @@ func TestHealth(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"healthy","timestamp":"2025-01-18T10:00:00Z","version":"1.0.0"}`))
+		w.Write([]byte(`{"status":"healthy","timestamp":"2025-01-18T10:00:00Z","version":"2.0.0"}`))
 	}))
 	defer server.Close()
 
@@ -83,8 +83,8 @@ func TestHealth(t *testing.T) {
 		t.Errorf("Expected status 'healthy', got %s", health.Status)
 	}
 
-	if health.Version != "1.0.0" {
-		t.Errorf("Expected version '1.0.0', got %s", health.Version)
+	if health.Version != "2.0.0" {
+		t.Errorf("Expected version '2.0.0', got %s", health.Version)
 	}
 }
 
@@ -118,8 +118,8 @@ func TestExecuteTemplate(t *testing.T) {
 			},
 			"metadata": {
 				"request_id": "req-123",
-				"protocol_version": "1.0.0",
-				"server_version": "1.0.0",
+				"protocol_version": "2.0.0",
+				"server_version": "2.0.0",
 				"timestamp": 1640995200,
 				"processing_time_ms": 100
 			}
@@ -155,8 +155,8 @@ func TestExecuteTemplate_ValidationError(t *testing.T) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(`{
 			"error": {
-				"error_code": "VALIDATION_FAILED",
-				"error_type": "VALIDATION_ERROR",
+				"code": "VALIDATION_FAILED",
+				"type": "VALIDATION_ERROR",
 				"message": "Query cannot be empty",
 				"field": "query"
 			}

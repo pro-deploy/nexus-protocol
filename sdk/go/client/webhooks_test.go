@@ -42,8 +42,8 @@ func TestRegisterWebhook(t *testing.T) {
 			Message:   "Webhook registered successfully",
 			ResponseMetadata: &types.ResponseMetadata{
 				RequestID:      "req-123",
-				ProtocolVersion: "1.1.0",
-				ServerVersion:   "1.1.0",
+				ProtocolVersion: "2.0.0",
+				ServerVersion:   "2.0.0",
 				Timestamp:       1640995200,
 			},
 		}
@@ -122,8 +122,8 @@ func TestListWebhooks(t *testing.T) {
 			Offset: 0,
 			ResponseMetadata: &types.ResponseMetadata{
 				RequestID:      "req-456",
-				ProtocolVersion: "1.1.0",
-				ServerVersion:   "1.1.0",
+				ProtocolVersion: "2.0.0",
+				ServerVersion:   "2.0.0",
 				Timestamp:       1640995400,
 			},
 		}
@@ -179,8 +179,8 @@ func TestDeleteWebhook(t *testing.T) {
 			Message:   "Webhook deleted successfully",
 			ResponseMetadata: &types.ResponseMetadata{
 				RequestID:      "req-789",
-				ProtocolVersion: "1.1.0",
-				ServerVersion:   "1.1.0",
+				ProtocolVersion: "2.0.0",
+				ServerVersion:   "2.0.0",
 				Timestamp:       1640995500,
 			},
 		}
@@ -224,8 +224,8 @@ func TestTestWebhook(t *testing.T) {
 			ResponseTimeMS: 150,
 			ResponseMetadata: &types.ResponseMetadata{
 				RequestID:      "req-999",
-				ProtocolVersion: "1.1.0",
-				ServerVersion:   "1.1.0",
+				ProtocolVersion: "2.0.0",
+				ServerVersion:   "2.0.0",
 				Timestamp:       1640995600,
 			},
 		}

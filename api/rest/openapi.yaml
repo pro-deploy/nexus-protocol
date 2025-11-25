@@ -2612,17 +2612,20 @@ components:
       properties:
         error:
           type: object
+          description: ErrorDetail согласно Nexus Protocol v2.0.0
           required:
-            - error_code
-            - error_type
+            - code
+            - type
             - message
           properties:
-            error_code:
+            code:
               type: string
+              description: Машинно-читаемый код ошибки (UPPER_SNAKE_CASE)
               pattern: '^[A-Z_]+$'
               example: "VALIDATION_FAILED"
-            error_type:
+            type:
               type: string
+              description: Категория ошибки
               enum: [VALIDATION_ERROR, AUTHENTICATION_ERROR, AUTHORIZATION_ERROR, NOT_FOUND, CONFLICT, RATE_LIMIT_ERROR, INTERNAL_ERROR, EXTERNAL_ERROR, PROTOCOL_VERSION_ERROR]
               example: "VALIDATION_ERROR"
             message:
@@ -3965,7 +3968,7 @@ components:
           additionalProperties:
             type: string
           example:
-            version: "1.0.0"
+            version: "2.0.0"
             region: "us-east-1"
         created_at:
           type: string
@@ -4023,7 +4026,8 @@ components:
           example: "classification"
         version:
           type: string
-          example: "1.0.0"
+          description: ML model version (Semantic Versioning)
+          example: "2.0.0"
         accuracy:
           type: number
           format: float

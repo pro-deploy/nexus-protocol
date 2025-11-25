@@ -358,9 +358,12 @@ return nil, st.Err()
 
 **Protocol Buffers:**
 ```protobuf
+// Примечание: В Protocol Buffers используются имена error_code и error_type,
+// но при сериализации в JSON они должны соответствовать полям "code" и "type"
+// согласно Nexus Protocol v2.0.0
 message ErrorDetail {
-  string error_code = 1;
-  string error_type = 2;
+  string error_code = 1;  // В JSON: "code"
+  string error_type = 2;   // В JSON: "type"
   string message = 3;
   string field = 4;
   string details = 5;

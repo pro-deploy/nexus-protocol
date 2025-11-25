@@ -152,11 +152,11 @@ aws ecs create-service \
 
 ```bash
 # Сборка образа
-gcloud builds submit --tag gcr.io/PROJECT_ID/nexus-api:1.1.0
+gcloud builds submit --tag gcr.io/PROJECT_ID/nexus-api:2.0.0
 
 # Развертывание
 gcloud run deploy nexus-api \
-  --image gcr.io/PROJECT_ID/nexus-api:1.1.0 \
+  --image gcr.io/PROJECT_ID/nexus-api:2.0.0 \
   --platform managed \
   --region us-central1 \
   --allow-unauthenticated \
@@ -164,7 +164,7 @@ gcloud run deploy nexus-api \
   --cpu 2 \
   --min-instances 1 \
   --max-instances 10 \
-  --set-env-vars "PROTOCOL_VERSION=1.1.0,ENABLE_ENTERPRISE_FEATURES=true"
+  --set-env-vars "PROTOCOL_VERSION=2.0.0,ENABLE_ENTERPRISE_FEATURES=true"
 ```
 
 ## ✅ Production Checklist
@@ -216,7 +216,7 @@ gcloud run deploy nexus-api \
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `PROTOCOL_VERSION` | Версия протокола | `1.1.0` |
+| `PROTOCOL_VERSION` | Версия протокола | `2.0.0` |
 | `ENABLE_ENTERPRISE_FEATURES` | Включить enterprise фичи | `true` |
 | `RATE_LIMIT_ENABLED` | Включить rate limiting | `true` |
 | `RATE_LIMIT_REQUESTS_PER_MINUTE` | Лимит запросов в минуту | `1000` |
@@ -284,4 +284,4 @@ kubectl scale deployment nexus-api --replicas=10 -n nexus
 
 ---
 
-**Nexus Protocol v1.1.0** - готов к production deployment! 🚀
+**Nexus Protocol v2.0.0** - готов к production deployment! 🚀

@@ -21,7 +21,7 @@ Application Protocol определяет:
   "metadata": {
     "request_id": "550e8400-e29b-41d4-a716-446655440000",
     "protocol_version": "2.0.0",
-    "client_version": "1.0.0",
+    "client_version": "2.0.0",
     "timestamp": 1640995200
   },
   "data": {
@@ -37,7 +37,7 @@ Application Protocol определяет:
   "metadata": {
     "request_id": "uuid",
     "protocol_version": "2.0.0",
-    "client_version": "1.0.0",
+    "client_version": "2.0.0",
     "timestamp": 1640995200
   },
   "data": {

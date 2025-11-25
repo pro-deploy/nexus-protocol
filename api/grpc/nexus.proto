@@ -50,13 +50,17 @@ message ResponseMetadata {
 }
 
 // ErrorDetail детальная информация об ошибке (для gRPC Status)
+// Соответствует спецификации Nexus Protocol v2.0.0
+// Примечание: В Protocol Buffers используются имена error_code и error_type,
+// но при сериализации в JSON они должны соответствовать полям "code" и "type"
+// согласно протоколу (см. protocol/ERROR_HANDLING.md)
 message ErrorDetail {
-  string error_code = 1;               // Код ошибки (например, "VALIDATION_FAILED")
+  string error_code = 1;               // Код ошибки (UPPER_SNAKE_CASE, например, "VALIDATION_FAILED")
   string error_type = 2;               // Тип ошибки (например, "VALIDATION_ERROR")
-  string message = 3;                  // Сообщение об ошибке
-  string field = 4;                    // Поле, вызвавшее ошибку (если применимо)
-  string details = 5;                  // Детальная информация
-  map<string, string> metadata = 6;    // Дополнительные метаданные
+  string message = 3;                  // Человеко-читаемое сообщение об ошибке
+  string field = 4;                    // Поле, вызвавшее ошибку (для валидационных ошибок)
+  string details = 5;                  // Детальная информация об ошибке
+  map<string, string> metadata = 6;    // Дополнительные метаданные ошибки
 }
 
 message Location {
