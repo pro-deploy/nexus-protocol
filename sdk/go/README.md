@@ -1,31 +1,88 @@
-# Nexus Protocol Go SDK v2.0.0
+# Nexus Protocol Go SDK v2.0.0 ✨
 
-Go SDK для работы с Nexus Application Protocol v2.0.0.
+[![Go Version](https://img.shields.io/badge/Go-1.18+-00ADD8.svg)](https://golang.org)
+[![Protocol Version](https://img.shields.io/badge/Protocol-2.0.0-blue.svg)](https://github.com/nexus-protocol/nexus-protocol)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-## 🚀 Новое в версии 2.0.0 - Advanced Enterprise возможности
+Go SDK для работы с **Nexus Application Protocol v2.0.0** - унифицированным протоколом для AI-платформ и интеграций.
 
-- **Hybrid AI Classification**: Быстрая ML-классификация + Ollama fallback для 1000+ RPS
-- **Admin API**: Полный CRUD для управления AI, доменами, интеграциями
-- **Advanced Protocol Validation**: Автоматическая проверка совместимости версий
-- **Enterprise метрики**: Rate limiting, кэширование, квоты в ResponseMetadata
-- **Приоритетные запросы**: Управление приоритетами через custom_headers
-- **Batch операции**: Параллельное выполнение множественных операций
-- **Webhooks**: Асинхронная обработка результатов
-- **Расширенная аналитика**: Метрики конверсии и производительности
-- **Детальный health check**: Статус компонентов и емкость системы
-- **Пагинация и фильтры**: Продвинутый поиск с фильтрами
-- **Локализация**: Поддержка locale, timezone, currency
-- **Workflow поддержка**: Многошаговые сценарии с зависимостями между шагами
+## 🌟 Ключевые возможности
+
+### 🚀 Новое в версии 2.0.0 - Enterprise Ready
+
+- **🔄 Hybrid AI Classification**: Быстрая ML-классификация + Ollama fallback для 1000+ RPS
+- **⚙️ Admin API**: Полный CRUD для управления AI, доменами, интеграциями
+- **✅ Advanced Protocol Validation**: Автоматическая проверка совместимости версий
+- **📊 Enterprise метрики**: Rate limiting, кэширование, квоты в ResponseMetadata
+- **⭐ Приоритетные запросы**: Управление приоритетами через custom_headers
+- **📦 Batch операции**: Параллельное выполнение множественных операций
+- **🪝 Webhooks**: Асинхронная обработка результатов
+- **📈 Расширенная аналитика**: Метрики конверсии и производительности
+- **🏥 Детальный health check**: Статус компонентов и емкость системы
+- **🔍 Пагинация и фильтры**: Продвинутый поиск с фильтрами
+- **🌍 Локализация**: Поддержка locale, timezone, currency
+- **🔗 Workflow поддержка**: Многошаговые сценарии с зависимостями между шагами
+
+### 🏗️ Архитектура SDK
+
+```
+sdk/go/
+├── client/           # Основной клиент API
+├── types/            # Структуры данных
+├── examples/         # Примеры использования
+├── protocol/         # Валидация протокола
+└── types/           # Типы данных
+```
+
+### 📋 Поддерживаемые операции
+
+#### Core API
+- ✅ **ExecuteTemplate** - Выполнение шаблонов с AI
+- ✅ **GetExecutionStatus** - Получение статуса выполнения
+- ✅ **Health** - Проверка здоровья сервера
+- ✅ **Version** - Информация о версиях
+
+#### Enterprise API (v2.0.0)
+- ✅ **Batch Operations** - Пакетное выполнение
+- ✅ **Webhooks** - Управление вебхуками
+- ✅ **Analytics** - Аналитические данные
+- ✅ **Admin API** - Администрирование
+- ✅ **Frontend Config** - Конфигурация UI
 
 **Для enterprise клиентов**: [Advanced Examples](./examples/advanced/)
 
-## Установка
+## 📦 Установка
 
+### Через go get
 ```bash
 go get github.com/pro-deploy/nexus-protocol/sdk/go
 ```
 
-## Быстрый старт
+### Через go.mod
+```go
+module your-project
+
+go 1.18
+
+require (
+    github.com/pro-deploy/nexus-protocol/sdk/go v2.0.0
+)
+```
+
+### Импорт пакетов
+```go
+import (
+    "context"
+    "time"
+
+    "github.com/pro-deploy/nexus-protocol/sdk/go/client"
+    "github.com/pro-deploy/nexus-protocol/sdk/go/types"
+)
+```
+
+## 🚀 Быстрый старт
+
+### 1. Базовое использование
 
 ```go
 package main
@@ -34,36 +91,149 @@ import (
     "context"
     "fmt"
     "log"
-    
+
     "github.com/pro-deploy/nexus-protocol/sdk/go/client"
     "github.com/pro-deploy/nexus-protocol/sdk/go/types"
 )
 
 func main() {
-    // Создаем клиент
+    // Создаем клиент с базовой конфигурацией
     cfg := client.Config{
-        BaseURL:         "http://localhost:8080",
+        BaseURL:         "https://api.nexus.dev",
         Token:           "your-jwt-token",
-        ProtocolVersion: "2.0.0", // Nexus Protocol v2.0.0
+        ProtocolVersion: "2.0.0",
         ClientVersion:   "2.0.0",
+        ClientID:        "my-app",
+        ClientType:      "web",
+        Timeout:         30 * time.Second,
     }
-    
+
     nexusClient := client.NewClient(cfg)
     ctx := context.Background()
-    
-    // Выполняем шаблон
+
+    // Выполняем запрос
     req := &types.ExecuteTemplateRequest{
         Query:    "хочу борщ",
         Language: "ru",
+        Context: &types.UserContext{
+            UserID:    "user-123",
+            Locale:    "ru-RU",
+            Currency:  "RUB",
+        },
     }
-    
+
     result, err := nexusClient.ExecuteTemplate(ctx, req)
     if err != nil {
         log.Fatal(err)
     }
-    
-    fmt.Printf("Execution ID: %s\n", result.ExecutionID)
-    fmt.Printf("Status: %s\n", result.Status)
+
+    fmt.Printf("✅ Шаблон выполнен!\n")
+    fmt.Printf("   Execution ID: %s\n", result.ExecutionID)
+    fmt.Printf("   Status: %s\n", result.Status)
+    fmt.Printf("   Время обработки: %d ms\n", result.ProcessingTimeMS)
+}
+```
+
+### 2. С retry и логированием
+
+```go
+package main
+
+import (
+    "context"
+    "log"
+    "time"
+
+    "github.com/pro-deploy/nexus-protocol/sdk/go/client"
+)
+
+func main() {
+    // Конфигурация retry
+    retryCfg := client.RetryConfig{
+        MaxRetries:        3,
+        InitialDelay:      100 * time.Millisecond,
+        MaxDelay:          5 * time.Second,
+        BackoffMultiplier: 2.0,
+    }
+
+    // Логгер
+    logger := client.NewSimpleLogger(client.LogLevelInfo)
+
+    // Клиент с enterprise возможностями
+    cfg := client.Config{
+        BaseURL:         "https://api.nexus.dev",
+        Token:           "your-jwt-token",
+        ProtocolVersion: "2.0.0",
+        ClientVersion:   "2.0.0",
+        RetryConfig:     &retryCfg,
+        Logger:          logger,
+        // Enterprise: включение дополнительных метрик
+        EnableMetrics:   true,
+    }
+
+    nexusClient := client.NewClient(cfg)
+    ctx := context.Background()
+
+    // Health check
+    health, err := nexusClient.Health(ctx)
+    if err != nil {
+        log.Fatal("Сервер недоступен:", err)
+    }
+
+    log.Printf("✅ Сервер работает (версия: %s)", health.Version)
+}
+```
+
+### 3. Batch операции (Enterprise)
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+
+    "github.com/pro-deploy/nexus-protocol/sdk/go/client"
+    "github.com/pro-deploy/nexus-protocol/sdk/go/types"
+)
+
+func main() {
+    cfg := client.Config{
+        BaseURL:         "https://api.nexus.dev",
+        Token:           "your-jwt-token",
+        ProtocolVersion: "2.0.0",
+        ClientVersion:   "2.0.0",
+    }
+
+    client := client.NewClient(cfg)
+    ctx := context.Background()
+
+    // Пакетное выполнение
+    batchReq := &types.BatchExecuteRequest{
+        Requests: []*types.ExecuteTemplateRequest{
+            {
+                Query:    "хочу борщ",
+                Language: "ru",
+                Context: &types.UserContext{UserID: "user-1"},
+            },
+            {
+                Query:    "find pizza near me",
+                Language: "en",
+                Context: &types.UserContext{UserID: "user-2"},
+            },
+        },
+        Options: &types.BatchOptions{
+            ParallelExecution: true,
+            MaxConcurrency:    5,
+        },
+    }
+
+    results, err := client.BatchExecute(ctx, batchReq)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    fmt.Printf("✅ Batch выполнен: %d результатов\n", len(results.Results))
 }
 ```
 
@@ -618,6 +788,206 @@ make run-metrics       # Metrics пример
 - 📄 **Пагинация** - поддержка больших результатов
 - 🌍 **Локализация** - поддержка locale, timezone, currency
 - 🏢 **Multi-tenant** - изоляция данных по клиентам
+
+## 📚 API Reference
+
+### Core API
+
+#### ExecuteTemplate - Выполнение шаблона
+
+```go
+func (c *Client) ExecuteTemplate(ctx context.Context, req *types.ExecuteTemplateRequest) (*types.ExecuteTemplateResponse, error)
+```
+
+**Пример:**
+```go
+req := &types.ExecuteTemplateRequest{
+    Query:    "хочу борщ",
+    Language: "ru",
+    Context: &types.UserContext{
+        UserID:    "user-123",
+        SessionID: "session-456",
+        Location: &types.UserLocation{
+            Latitude:  55.7558,
+            Longitude: 37.6173,
+            Accuracy:  50,
+        },
+        Locale:    "ru-RU",
+        Currency:  "RUB",
+        Region:    "RU",
+    },
+    Options: &types.ExecuteOptions{
+        TimeoutMS:           30000,
+        MaxResultsPerDomain: 5,
+        ParallelExecution:   true,
+        IncludeWebSearch:    true,
+    },
+}
+
+result, err := client.ExecuteTemplate(ctx, req)
+if err != nil {
+    // Обработка ошибок по типам
+    switch e := err.(type) {
+    case *types.ErrorDetail:
+        fmt.Printf("Protocol Error: %s (%s)\n", e.Message, e.Code)
+    case *types.ValidationError:
+        fmt.Printf("Validation Error: %s\n", e.Field)
+    default:
+        fmt.Printf("Unknown error: %v\n", err)
+    }
+    return
+}
+```
+
+#### GetExecutionStatus - Получение статуса
+
+```go
+func (c *Client) GetExecutionStatus(ctx context.Context, executionID string) (*types.ExecutionStatus, error)
+```
+
+#### Health - Проверка здоровья
+
+```go
+func (c *Client) Health(ctx context.Context) (*types.HealthResponse, error)
+```
+
+### Enterprise API (v2.0.0)
+
+#### Batch Operations
+
+```go
+func (c *Client) BatchExecute(ctx context.Context, req *types.BatchExecuteRequest) (*types.BatchExecuteResponse, error)
+```
+
+**Пример:**
+```go
+batchReq := &types.BatchExecuteRequest{
+    Requests: []*types.ExecuteTemplateRequest{
+        {Query: "хочу борщ", Language: "ru"},
+        {Query: "find pizza", Language: "en"},
+    },
+    Options: &types.BatchOptions{
+        ParallelExecution: true,
+        MaxConcurrency:    5,
+        TimeoutMS:         60000,
+    },
+}
+
+results, err := client.BatchExecute(ctx, batchReq)
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Printf("Обработано запросов: %d\n", len(results.Results))
+```
+
+#### Webhooks
+
+```go
+func (c *Client) CreateWebhook(ctx context.Context, req *types.CreateWebhookRequest) (*types.Webhook, error)
+func (c *Client) ListWebhooks(ctx context.Context, req *types.ListWebhooksRequest) (*types.ListWebhooksResponse, error)
+func (c *Client) DeleteWebhook(ctx context.Context, webhookID string) error
+```
+
+#### Analytics
+
+```go
+func (c *Client) GetAnalytics(ctx context.Context, req *types.GetAnalyticsRequest) (*types.AnalyticsResponse, error)
+```
+
+#### Admin API
+
+```go
+// Управление AI моделями
+func (c *Client) ListAIModels(ctx context.Context, req *types.ListAIModelsRequest) (*types.ListAIModelsResponse, error)
+func (c *Client) CreateAIModel(ctx context.Context, req *types.CreateAIModelRequest) (*types.AIModel, error)
+
+// Управление доменами
+func (c *Client) ListDomains(ctx context.Context, req *types.ListDomainsRequest) (*types.ListDomainsResponse, error)
+func (c *Client) CreateDomain(ctx context.Context, req *types.CreateDomainRequest) (*types.Domain, error)
+
+// Управление интеграциями
+func (c *Client) ListIntegrations(ctx context.Context, req *types.ListIntegrationsRequest) (*types.ListIntegrationsResponse, error)
+```
+
+### Конфигурация клиента
+
+#### Базовая конфигурация
+
+```go
+cfg := client.Config{
+    BaseURL:         "https://api.nexus.dev",
+    Token:           "jwt-token",
+    ProtocolVersion: "2.0.0",
+    ClientVersion:   "2.0.0",
+    ClientID:        "my-app",
+    ClientType:      "web",
+    Timeout:         30 * time.Second,
+}
+```
+
+#### Расширенная конфигурация
+
+```go
+cfg := client.Config{
+    BaseURL:         "https://api.nexus.dev",
+    Token:           "jwt-token",
+    ProtocolVersion: "2.0.0",
+    ClientVersion:   "2.0.0",
+
+    // Retry конфигурация
+    RetryConfig: &client.RetryConfig{
+        MaxRetries:        3,
+        InitialDelay:      100 * time.Millisecond,
+        MaxDelay:          5 * time.Second,
+        BackoffMultiplier: 2.0,
+    },
+
+    // Логирование
+    Logger: client.NewSimpleLogger(client.LogLevelInfo),
+
+    // Enterprise возможности
+    EnableMetrics: true,
+
+    // Кастомные заголовки
+    CustomHeaders: map[string]string{
+        "X-API-Key":    "your-api-key",
+        "X-Client-Info": "go-sdk/2.0.0",
+    },
+}
+```
+
+## 🛠️ Разработка и тестирование
+
+### Запуск тестов
+
+```bash
+# Все тесты
+go test ./...
+
+# С интеграционными тестами
+go test -tags=integration ./...
+
+# С покрытием
+go test -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out
+```
+
+### Примеры использования
+
+Посмотрите полные примеры в директории [`examples/`](./examples/):
+
+- [`basic/`](./examples/basic/) - базовое использование
+- [`advanced/`](./examples/advanced/) - enterprise возможности
+- [`error_handling/`](./examples/error_handling/) - обработка ошибок
+- [`webhooks/`](./examples/advanced/webhooks/) - вебхуки
+
+### Генерация документации
+
+```bash
+go doc -all ./client > client_docs.md
+go doc -all ./types > types_docs.md
+```
 
 ## Зависимости
 
