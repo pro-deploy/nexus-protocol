@@ -1,12 +1,14 @@
 // Nexus AI Platform - Context-Aware Templates
 // gRPC API для Nexus системы
 // Автор: Биркин Максим
-// Версия протокола: 1.1.0
+// Версия протокола: 2.0.0
 
 syntax = "proto3";
 
 package nexus;
 option go_package = "nexus-full-protocol/api/proto";
+
+import "google/protobuf/struct.proto";
 
 // ============================================================================
 // Constants
@@ -25,23 +27,23 @@ option go_package = "nexus-full-protocol/api/proto";
 // RequestMetadata метаданные запроса (стандартизированные для всех запросов)
 message RequestMetadata {
   string request_id = 1;              // Уникальный ID запроса (UUID)
-  string client_version = 2;           // Версия клиента (например, "1.0.0")
-  string version = 3;                  // Версия протокола (например, "1.0.0")
-  string client_id = 4;                // Идентификатор клиента
-  string client_type = 5;             // Тип клиента (web, mobile, sdk, etc.)
-  int64 timestamp = 6;                 // Unix timestamp запроса
+  string protocol_version = 2;        // Версия протокола (например, "2.0.0")
+  string client_version = 3;          // Версия клиента (например, "2.0.0")
+  string client_id = 4;               // Идентификатор клиента
+  string client_type = 5;              // Тип клиента (web, mobile, sdk, etc.)
+  int64 timestamp = 6;                // Unix timestamp запроса
   map<string, string> custom_headers = 7; // Кастомные заголовки
 }
 
 // ResponseMetadata метаданные ответа
 message ResponseMetadata {
   string request_id = 1;               // ID запроса (из RequestMetadata)
-  string server_version = 2;           // Версия сервера
-  string version = 3;                  // Версия протокола
+  string protocol_version = 2;         // Версия протокола
+  string server_version = 3;            // Версия сервера
   int64 timestamp = 4;                 // Unix timestamp ответа
   int32 processing_time_ms = 5;        // Время обработки в миллисекундах
 
-  // Enterprise features v1.1.0
+  // Enterprise features v2.0.0
   RateLimitInfo rate_limit_info = 6;   // Информация о rate limiting
   CacheInfo cache_info = 7;            // Информация о кэшировании
   QuotaInfo quota_info = 8;            // Информация о квотах
@@ -69,6 +71,10 @@ message UserContext {
   string tenant_id = 3;
   repeated string roles = 4;
   Location location = 5;
+  string locale = 6;      // Локаль пользователя (ru-RU, en-US)
+  string timezone = 7;    // Часовой пояс (Europe/Moscow)
+  string currency = 8;    // Валюта (RUB, USD, EUR)
+  string region = 9;      // Регион (RU, US, EU)
 }
 
 message Action {
@@ -84,7 +90,7 @@ message ResultItem {
   string type = 2;
   string title = 3;
   string description = 4;
-  map<string, string> data = 5;
+  google.protobuf.Struct data = 5;  // Структурированные данные результата (может содержать сложные объекты: stores, addresses и т.д.)
   float relevance = 6;
   float confidence = 7;
   repeated Action actions = 8;
@@ -139,27 +145,42 @@ message ExecuteOptions {
   bool include_web_search = 4;
 }
 
-// Enterprise features v1.1.0 - Monitoring & Metrics
+// AdvancedFilters содержит расширенные фильтры результатов (Enterprise v2.0.0)
+message AdvancedFilters {
+  repeated string domains = 1;           // Список доменов для включения
+  repeated string exclude_domains = 2;   // Список доменов для исключения
+  float min_relevance = 3;               // Минимальная релевантность (0-1)
+  int32 max_results = 4;                 // Максимальное количество результатов
+  string sort_by = 5;                    // Сортировка: relevance, date, rating
+  DateRange date_range = 6;               // Диапазон дат
+}
+
+// DateRange представляет диапазон дат
+message DateRange {
+  int64 from = 1;  // Timestamp начала (Unix timestamp в секундах)
+  int64 to = 2;    // Timestamp конца (Unix timestamp в секундах)
+}
+
+// Enterprise features v2.0.0 - Monitoring & Metrics
 message RateLimitInfo {
-  int32 requests_remaining = 1;        // Оставшиеся запросы в окне
-  int32 reset_time_seconds = 2;        // Время до сброса лимита
-  string limit_type = 3;               // Тип лимита (per_user, per_tenant, global)
+  int32 limit = 1;                     // Лимит запросов
+  int32 remaining = 2;                 // Оставшиеся запросы
+  int64 reset_at = 3;                  // Время сброса лимита (Unix timestamp)
 }
 
 message CacheInfo {
   bool cache_hit = 1;                  // Было ли попадание в кэш
-  string cache_key = 2;                // Ключ кэширования
-  int32 ttl_remaining_seconds = 3;     // Оставшееся время жизни кэша
+  string cache_key = 2;                 // Ключ кэширования
+  int32 cache_ttl = 3;                  // TTL кэша в секундах
 }
 
 message QuotaInfo {
-  int32 daily_requests_used = 1;       // Использовано запросов за день
-  int32 daily_requests_limit = 2;      // Лимит запросов в день
-  int32 monthly_requests_used = 3;     // Использовано запросов за месяц
-  int32 monthly_requests_limit = 4;    // Лимит запросов в месяц
+  int64 quota_used = 1;                // Использовано квоты
+  int64 quota_limit = 2;                // Лимит квоты
+  string quota_type = 3;                // Тип квоты (requests, data, storage, bandwidth)
 }
 
-// Batch Operations v1.1.0
+// Batch Operations v2.0.0
 message BatchRequest {
   string batch_id = 1;                 // Уникальный ID батча
   repeated ExecuteTemplateRequest requests = 2; // Запросы в батче
@@ -183,7 +204,7 @@ message BatchMetadata {
   int32 total_processing_time_ms = 6;  // Общее время обработки
 }
 
-// Webhook Integration v1.1.0
+// Webhook Integration v2.0.0
 message WebhookConfig {
   string url = 1;                      // Webhook URL
   repeated string events = 2;          // События для отправки
@@ -211,6 +232,7 @@ message ExecuteTemplateRequest {
   UserContext context = 3;
   ExecuteOptions options = 4;
   RequestMetadata metadata = 5;        // Метаданные запроса (опционально)
+  AdvancedFilters filters = 6;        // Расширенные фильтры (Enterprise v2.0.0)
 }
 
 message ExecuteTemplateResponse {
@@ -248,13 +270,13 @@ service ContextAwareTemplates {
   rpc StreamTemplateResults(StreamTemplateRequest) returns (stream TemplateResult);
 }
 
-// Enterprise Batch Operations Service v1.1.0
+// Enterprise Batch Operations Service v2.0.0
 service BatchOperations {
   rpc ExecuteBatch(BatchRequest) returns (BatchResponse);
   rpc GetBatchStatus(GetExecutionStatusRequest) returns (BatchResponse);
 }
 
-// Enterprise Webhook Service v1.1.0
+// Enterprise Webhook Service v2.0.0
 service WebhookService {
   rpc RegisterWebhook(WebhookConfig) returns (WebhookConfig);
   rpc UnregisterWebhook(WebhookConfig) returns (Empty);

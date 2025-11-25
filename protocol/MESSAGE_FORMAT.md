@@ -14,8 +14,8 @@ Nexus Application Protocol определяет единый формат соо
 {
   "metadata": {
     "request_id": "uuid",
-    "protocol_version": "1.0.0",
-    "client_version": "1.0.0",
+    "protocol_version": "2.0.0",
+    "client_version": "2.0.0",
     "client_id": "string",
     "client_type": "web|mobile|sdk|api|desktop",
     "timestamp": 1640995200,
@@ -36,8 +36,8 @@ Nexus Application Protocol определяет единый формат соо
 {
   "metadata": {
     "request_id": "550e8400-e29b-41d4-a716-446655440000",
-    "protocol_version": "1.0.0",
-    "client_version": "1.0.0",
+    "protocol_version": "2.0.0",
+    "client_version": "2.0.0",
     "client_id": "web-app",
     "client_type": "web",
     "timestamp": 1640995200
@@ -66,8 +66,8 @@ Nexus Application Protocol определяет единый формат соо
 {
   "metadata": {
     "request_id": "550e8400-e29b-41d4-a716-446655440000",
-    "protocol_version": "1.0.0",
-    "server_version": "1.0.0",
+    "protocol_version": "2.0.0",
+    "server_version": "2.0.0",
     "timestamp": 1640995235,
     "processing_time_ms": 3500
   },
@@ -120,8 +120,8 @@ Authorization: Bearer <jwt_token>
   "language": "ru",
   "metadata": {
     "request_id": "req-123",
-    "protocol_version": "1.0.0",
-    "client_version": "1.0.0"
+    "protocol_version": "2.0.0",
+    "client_version": "2.0.0"
   }
 }
 ```
@@ -139,8 +139,8 @@ Content-Type: application/json
   },
   "metadata": {
     "request_id": "req-123",
-    "protocol_version": "1.0.0",
-    "server_version": "1.0.0",
+    "protocol_version": "2.0.0",
+    "server_version": "2.0.0",
     "timestamp": 1640995235,
     "processing_time_ms": 3500
   }
@@ -249,13 +249,13 @@ message ResponseMetadata {
 - **Тип:** string
 - **Формат:** Semantic Versioning `MAJOR.MINOR.PATCH`
 - **Обязательно:** Да
-- **Пример:** `"1.0.0"`
+- **Пример:** `"2.0.0"`
 
 #### client_version
 - **Тип:** string
 - **Формат:** Semantic Versioning `MAJOR.MINOR.PATCH`
 - **Обязательно:** Да
-- **Пример:** `"1.0.0"`
+- **Пример:** `"2.0.0"`
 
 #### client_type
 - **Тип:** string
@@ -277,8 +277,8 @@ message ResponseMetadata {
 {
   "metadata": {
     "request_id": "550e8400-e29b-41d4-a716-446655440000",
-    "protocol_version": "1.0.0",
-    "client_version": "1.0.0",
+    "protocol_version": "2.0.0",
+    "client_version": "2.0.0",
     "client_id": "web-app",
     "client_type": "web",
     "timestamp": 1640995200
@@ -305,7 +305,7 @@ message ResponseMetadata {
 {
   "metadata": {
     "request_id": "550e8400-e29b-41d4-a716-446655440000",
-    "protocol_version": "1.1.0",
+    "protocol_version": "2.0.0",
     "server_version": "1.1.3",
     "timestamp": 1640995235,
     "processing_time_ms": 3500
@@ -356,7 +356,7 @@ message ResponseMetadata {
 {
   "metadata": {
     "request_id": "550e8400-e29b-41d4-a716-446655440001",
-    "protocol_version": "1.1.0",
+    "protocol_version": "2.0.0",
     "server_version": "1.1.3",
     "timestamp": 1640995235,
     "processing_time_ms": 245
@@ -483,8 +483,8 @@ message ResponseMetadata {
 {
   "metadata": {
     "request_id": "req-123",
-    "protocol_version": "1.0.0",
-    "client_version": "1.0.0",
+    "protocol_version": "2.0.0",
+    "client_version": "2.0.0",
     "custom_headers": {
       "x-feature-flag": "new-ui",
       "x-experiment-id": "exp-456"
@@ -511,7 +511,7 @@ GET /api/v1/frontend/config HTTP/1.1
 {
   "metadata": {
     "request_id": "550e8400-e29b-41d4-a716-446655440000",
-    "protocol_version": "1.1.0",
+    "protocol_version": "2.0.0",
     "server_version": "1.1.3",
     "timestamp": 1640995235,
     "processing_time_ms": 5

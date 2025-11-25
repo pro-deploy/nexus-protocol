@@ -1,41 +1,29 @@
 package types
 
-// BatchOperation представляет одну операцию в batch запросе
-type BatchOperation struct {
-	ID      int         `json:"id"`      // уникальный ID операции в batch
-	Type    string      `json:"type"`    // тип операции (execute_template, log_event, etc.)
-	Request interface{} `json:"request"` // тело запроса операции
-}
-
-// BatchOptions содержит опции выполнения batch операций
-type BatchOptions struct {
-	StopOnError bool `json:"stop_on_error,omitempty"` // остановиться при первой ошибке
-	Parallel    bool `json:"parallel,omitempty"`      // выполнять параллельно
-	MaxConcurrency int32 `json:"max_concurrency,omitempty"` // максимальная параллельность
-}
-
-// BatchRequest представляет batch запрос
+// BatchRequest представляет batch запрос согласно протоколу v2.0.0
+// Соответствует gRPC BatchRequest и OpenAPI спецификации
 type BatchRequest struct {
-	Operations []BatchOperation `json:"operations"`
-	Options    *BatchOptions    `json:"options,omitempty"`
-	Metadata   *RequestMetadata `json:"metadata,omitempty"`
+	BatchID     string                  `json:"batch_id,omitempty"`     // Уникальный ID батча (генерируется сервером, если не указан)
+	Requests    []*ExecuteTemplateRequest `json:"requests"`              // Запросы в батче
+	BatchOptions *ExecuteOptions         `json:"batch_options,omitempty"` // Общие опции для батча
+	Metadata    *RequestMetadata        `json:"metadata,omitempty"`     // Метаданные запроса
 }
 
-// BatchResult представляет результат выполнения одной операции в batch
-type BatchResult struct {
-	OperationID int         `json:"operation_id"` // ID операции из запроса
-	Success     bool        `json:"success"`      // успешность выполнения
-	Data        interface{} `json:"data,omitempty"`      // результат операции (если success=true)
-	Error       *ErrorDetail `json:"error,omitempty"`     // ошибка операции (если success=false)
-	ExecutionTimeMS int32   `json:"execution_time_ms,omitempty"` // время выполнения операции
-}
-
-// BatchResponse представляет ответ на batch запрос
+// BatchResponse представляет ответ на batch запрос согласно протоколу v2.0.0
+// Соответствует gRPC BatchResponse и OpenAPI спецификации
 type BatchResponse struct {
-	Results         []BatchResult     `json:"results"`
-	Total           int32             `json:"total"`                      // всего операций
-	Successful      int32             `json:"successful"`                 // успешных операций
-	Failed          int32             `json:"failed"`                     // неудачных операций
-	TotalTimeMS     int32             `json:"total_time_ms,omitempty"`    // общее время выполнения
-	ResponseMetadata *ResponseMetadata `json:"response_metadata,omitempty"`
+	BatchID         string                `json:"batch_id"`              // ID батча
+	Responses       []*ExecuteTemplateResponse `json:"responses"`         // Ответы на запросы
+	BatchMetadata   *BatchMetadata        `json:"batch_metadata"`        // Метаданные батча
+	ResponseMetadata *ResponseMetadata    `json:"response_metadata,omitempty"` // Метаданные ответа
+}
+
+// BatchMetadata содержит метаданные выполнения batch операций
+type BatchMetadata struct {
+	TotalRequests        int32 `json:"total_requests"`                  // Общее количество запросов
+	SuccessfulRequests   int32 `json:"successful_requests"`             // Успешные запросы
+	FailedRequests       int32 `json:"failed_requests"`                  // Неудачные запросы
+	StartedAt            int64 `json:"started_at"`                      // Время начала (Unix timestamp)
+	CompletedAt          int64 `json:"completed_at,omitempty"`          // Время завершения (Unix timestamp)
+	TotalProcessingTimeMS int32 `json:"total_processing_time_ms,omitempty"` // Общее время обработки в миллисекундах
 }

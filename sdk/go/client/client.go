@@ -509,6 +509,12 @@ func (c *Client) Health(ctx context.Context) (*types.HealthResponse, error) {
 //	if ready.Ready {
 //		fmt.Println("Server is ready")
 //	}
+
+// Admin returns an admin client for administrative operations
+func (c *Client) Admin() *AdminClient {
+	return &AdminClient{client: c}
+}
+
 func (c *Client) Ready(ctx context.Context) (*types.ReadinessResponse, error) {
 	resp, err := c.doRequest(ctx, "GET", PathReady, nil)
 	if err != nil {

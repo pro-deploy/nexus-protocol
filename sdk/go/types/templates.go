@@ -34,7 +34,7 @@ type DomainMLModel struct {
 type DomainConfig struct {
 	ID           string             `json:"id"`
 	Name         string             `json:"name"`
-	Type         string             `json:"type"` // commerce, recipes, travel, knowledge, health, finance, custom
+	Type         string             `json:"type"` // commerce, recipes, travel, knowledge, health, finance, education, integrations, custom
 	Enabled      bool               `json:"enabled"`
 	Endpoint     string             `json:"endpoint"`    // URL микросервиса
 	AuthType     string             `json:"auth_type"`   // none, api_key, oauth2, jwt
@@ -69,7 +69,7 @@ type PromptConfig struct {
 	ID          string            `json:"id"`
 	Name        string            `json:"name"`
 	Description string            `json:"description"`
-	Domain      string            `json:"domain"`    // commerce, recipes, travel, knowledge
+	Domain      string            `json:"domain"`    // commerce, recipes, travel, knowledge, health, finance, education, integrations
 	Type        string            `json:"type"`      // system, user, assistant
 	Template    string            `json:"template"`  // шаблон промпта
 	Variables   []string          `json:"variables"` // переменные в шаблоне
@@ -119,6 +119,7 @@ type UserContext struct {
 	UserID    string        `json:"user_id,omitempty"`
 	SessionID string        `json:"session_id,omitempty"`
 	TenantID  string        `json:"tenant_id,omitempty"`
+	Roles     []string      `json:"roles,omitempty"` // роли пользователя
 	Location  *UserLocation `json:"location,omitempty"`
 	Locale    string        `json:"locale,omitempty"`   // локаль пользователя (ru-RU, en-US)
 	Timezone  string        `json:"timezone,omitempty"` // часовой пояс (Europe/Moscow)

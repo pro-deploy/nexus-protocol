@@ -1,13 +1,14 @@
 package types
 
 // ErrorDetail содержит детальную информацию об ошибке
+// Соответствует спецификации Nexus Protocol v2.0.0
 type ErrorDetail struct {
-	Code     string            `json:"error_code"`
-	Type     string            `json:"error_type"`
-	Message  string            `json:"message"`
-	Field    string            `json:"field,omitempty"`
-	Details  string            `json:"details,omitempty"`
-	Metadata map[string]string `json:"metadata,omitempty"`
+	Code     string            `json:"code"`      // Машинно-читаемый код ошибки (UPPER_SNAKE_CASE)
+	Type     string            `json:"type"`      // Категория ошибки (VALIDATION_ERROR, AUTHENTICATION_ERROR, etc.)
+	Message  string            `json:"message"`   // Человеко-читаемое сообщение об ошибке
+	Field    string            `json:"field,omitempty"`    // Поле, вызвавшее ошибку (для валидационных ошибок)
+	Details  string            `json:"details,omitempty"`  // Детальная информация об ошибке
+	Metadata map[string]string `json:"metadata,omitempty"` // Дополнительные метаданные ошибки
 }
 
 // ErrorResponse представляет ответ с ошибкой

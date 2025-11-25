@@ -43,7 +43,7 @@ paths:
                     format: date-time
                   version:
                     type: string
-                    example: "1.0.0"
+                    example: "2.0.0"
 
   /ready:
     get:
@@ -75,6 +75,42 @@ paths:
                       ai_services:
                         type: string
                         example: "ok"
+
+  /version:
+    get:
+      summary: Get API version information
+      description: Returns protocol version, server version, and build information
+      tags:
+        - System
+      responses:
+        '200':
+          description: Version information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  protocol_version:
+                    type: string
+                    pattern: '^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$'
+                    example: "2.0.0"
+                  server_version:
+                    type: string
+                    pattern: '^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$'
+                    example: "2.0.0"
+                  api_version:
+                    type: string
+                    example: "v1"
+                  build_info:
+                    type: object
+                    properties:
+                      git_commit:
+                        type: string
+                        example: "abc123def456"
+                      build_time:
+                        type: string
+                        format: date-time
+                        example: "2025-01-18T10:00:00Z"
 
   # Context-Aware Templates
   /templates/execute:
@@ -108,6 +144,8 @@ paths:
                   $ref: '#/components/schemas/UserContext'
                 options:
                   $ref: '#/components/schemas/ExecuteOptions'
+                filters:
+                  $ref: '#/components/schemas/AdvancedFilters'
                 metadata:
                   $ref: '#/components/schemas/RequestMetadata'
       responses:
@@ -476,6 +514,134 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/MessageResponse'
+                  metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /conversations/{conversationId}/history:
+    get:
+      summary: Get conversation history
+      description: Get message history for a conversation
+      security:
+        - bearerAuth: []
+      tags:
+        - Conversations
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Conversation ID
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+          description: Maximum number of messages to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of messages to skip
+        - name: before
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Get messages before this timestamp
+        - name: after
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Get messages after this timestamp
+      responses:
+        '200':
+          description: Conversation history retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      messages:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Message'
+                      total:
+                        type: integer
+                        format: int32
+                      limit:
+                        type: integer
+                        format: int32
+                      offset:
+                        type: integer
+                        format: int32
+                  metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /conversations/{conversationId}/typing:
+    post:
+      summary: Update typing status
+      description: Update typing indicator for a conversation
+      security:
+        - bearerAuth: []
+      tags:
+        - Conversations
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Conversation ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - typing
+              properties:
+                typing:
+                  type: boolean
+                  description: Whether user is currently typing
+      responses:
+        '200':
+          description: Typing status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      conversation_id:
+                        type: string
+                        format: uuid
+                      typing:
+                        type: boolean
+                      timestamp:
+                        type: string
+                        format: date-time
+                  metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
 
   # Analytics
   /analytics/events:
@@ -586,17 +752,37 @@ paths:
           schema:
             type: string
             format: uuid
+          description: Filter by user ID
         - name: tenant_id
           in: query
           schema:
             type: string
             format: uuid
+          description: Filter by tenant ID
         - name: days
           in: query
           schema:
             type: integer
             minimum: 1
+            maximum: 365
             default: 7
+          description: Number of days to analyze
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+          description: Start date (YYYY-MM-DD format)
+          example: "2025-01-01"
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+          description: End date (YYYY-MM-DD format)
+          example: "2025-01-31"
       responses:
         '200':
           description: Statistics retrieved
@@ -607,8 +793,158 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/AnalyticsStats'
+                  metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
 
-  # Enterprise Batch Operations v1.1.0
+  /analytics/user:
+    get:
+      summary: Get user-specific analytics
+      description: Get analytics for the current user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 365
+            default: 30
+          description: Number of days to analyze
+      responses:
+        '200':
+          description: User analytics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    description: User behavior analytics
+                  metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+
+  /analytics/realtime:
+    get:
+      summary: Get real-time metrics
+      description: Get real-time analytics metrics
+      security:
+        - bearerAuth: []
+      tags:
+        - Analytics
+      responses:
+        '200':
+          description: Real-time metrics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    description: Real-time metrics data
+                  metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+
+  /analytics/export:
+    get:
+      summary: Export analytics data
+      description: Export analytics data in specified format
+      security:
+        - bearerAuth: []
+      tags:
+        - Analytics
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, csv, xlsx]
+            default: json
+          description: Export format
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+          description: Start date (YYYY-MM-DD format)
+          example: "2025-01-01"
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+          description: End date (YYYY-MM-DD format)
+          example: "2025-01-31"
+      responses:
+        '200':
+          description: Analytics data exported
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      download_url:
+                        type: string
+                        format: uri
+                        description: URL to download exported data
+                      expires_at:
+                        type: string
+                        format: date-time
+                        description: Expiration time of download URL
+            application/csv:
+              schema:
+                type: string
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+
+  /analytics/clean:
+    post:
+      summary: Clean old analytics data
+      description: Delete analytics data older than specified days
+      security:
+        - bearerAuth: []
+      tags:
+        - Analytics
+      parameters:
+        - name: days_to_keep
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 3650
+            default: 90
+          description: Number of days to keep (data older will be deleted)
+      responses:
+        '200':
+          description: Analytics data cleaned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      deleted_count:
+                        type: integer
+                        format: int64
+                        description: Number of records deleted
+                      message:
+                        type: string
+                        description: Cleanup status message
+                  metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+
+  # Enterprise Batch Operations v2.0.0
   /batch/execute:
     post:
       summary: Execute batch operations
@@ -673,8 +1009,165 @@ paths:
                     $ref: '#/components/schemas/BatchResponse'
                   metadata:
                     $ref: '#/components/schemas/ResponseMetadata'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
 
-  # Enterprise Webhook Management v1.1.0
+  /batch/stats:
+    get:
+      summary: Get batch statistics
+      description: Get statistics about batch operations
+      security:
+        - bearerAuth: []
+      tags:
+        - Batch
+      responses:
+        '200':
+          description: Batch statistics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      total_batches:
+                        type: integer
+                        format: int64
+                        description: Total number of batch operations
+                      active_batches:
+                        type: integer
+                        format: int32
+                        description: Number of active batch operations
+                      completed_batches:
+                        type: integer
+                        format: int64
+                        description: Number of completed batch operations
+                      failed_batches:
+                        type: integer
+                        format: int64
+                        description: Number of failed batch operations
+                  metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+
+  /batch/{batchId}/cancel:
+    post:
+      summary: Cancel batch execution
+      description: Cancel a running batch operation
+      security:
+        - bearerAuth: []
+      tags:
+        - Batch
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Batch execution ID
+      responses:
+        '200':
+          description: Batch cancelled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      batch_id:
+                        type: string
+                        format: uuid
+                      status:
+                        type: string
+                        enum: [cancelled]
+                      message:
+                        type: string
+                  metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          description: Batch cannot be cancelled (already completed or failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /batch/{batchId}/operations:
+    get:
+      summary: Get batch operations
+      description: Get list of operations in a batch
+      security:
+        - bearerAuth: []
+      tags:
+        - Batch
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Batch execution ID
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+          description: Maximum number of operations to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of operations to skip
+      responses:
+        '200':
+          description: Batch operations retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      operations:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            operation_id:
+                              type: integer
+                              format: int32
+                            status:
+                              type: string
+                              enum: [pending, in_progress, completed, failed]
+                            request:
+                              $ref: '#/components/schemas/ExecuteTemplateRequest'
+                            response:
+                              $ref: '#/components/schemas/ExecuteTemplateResponse'
+                      total:
+                        type: integer
+                        format: int32
+                      limit:
+                        type: integer
+                        format: int32
+                      offset:
+                        type: integer
+                        format: int32
+                  metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # Enterprise Webhook Management v2.0.0
   /webhooks:
     post:
       summary: Register webhook
@@ -804,6 +1297,14 @@ paths:
             minimum: 1
             maximum: 100
             default: 50
+          description: Maximum number of deliveries to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of deliveries to skip
       responses:
         '200':
           description: Deliveries retrieved
@@ -816,6 +1317,126 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/WebhookDelivery'
+                  total:
+                    type: integer
+                    format: int32
+                  limit:
+                    type: integer
+                    format: int32
+                  offset:
+                    type: integer
+                    format: int32
+                  metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /webhooks/{webhookId}/test:
+    post:
+      summary: Test webhook
+      description: Send a test event to the webhook
+      security:
+        - bearerAuth: []
+      tags:
+        - Webhooks
+      parameters:
+        - name: webhookId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Webhook ID
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event_type:
+                  type: string
+                  enum: [template_executed, batch_completed, error_occurred]
+                  default: template_executed
+                  description: Type of test event to send
+                test_data:
+                  type: object
+                  additionalProperties: true
+                  description: Optional test data to include in the webhook payload
+      responses:
+        '200':
+          description: Webhook test completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      webhook_id:
+                        type: string
+                        format: uuid
+                      status:
+                        type: string
+                        enum: [success, failed]
+                      response_code:
+                        type: integer
+                        format: int32
+                        description: HTTP status code from webhook endpoint
+                      response_time_ms:
+                        type: integer
+                        format: int32
+                        description: Response time in milliseconds
+                      error:
+                        type: string
+                        description: Error message if test failed
+                  metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /webhooks/stats:
+    get:
+      summary: Get webhook statistics
+      description: Get statistics about webhooks
+      security:
+        - bearerAuth: []
+      tags:
+        - Webhooks
+      responses:
+        '200':
+          description: Webhook statistics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      total_webhooks:
+                        type: integer
+                        format: int32
+                        description: Total number of registered webhooks
+                      active_webhooks:
+                        type: integer
+                        format: int32
+                        description: Number of active webhooks
+                      total_deliveries:
+                        type: integer
+                        format: int64
+                        description: Total number of webhook deliveries
+                      successful_deliveries:
+                        type: integer
+                        format: int64
+                        description: Number of successful deliveries
+                      failed_deliveries:
+                        type: integer
+                        format: int64
+                        description: Number of failed deliveries
+                  metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
 
   # Admin Panel Endpoints (Superuser only)
   /admin/ai/config:
@@ -1909,27 +2530,36 @@ components:
     # Common schemas
     RequestMetadata:
       type: object
+      required:
+        - request_id
+        - protocol_version
+        - client_version
+        - timestamp
       properties:
         request_id:
           type: string
           format: uuid
           example: "550e8400-e29b-41d4-a716-446655440000"
-        client_version:
-          type: string
-          example: "1.0.0"
         protocol_version:
           type: string
-          example: "1.1.0"
+          pattern: '^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$'
+          example: "2.0.0"
+        client_version:
+          type: string
+          pattern: '^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$'
+          example: "2.0.0"
         client_id:
           type: string
+          maxLength: 100
           example: "web-app"
         client_type:
           type: string
-          enum: [web, mobile, sdk, api]
+          enum: [web, mobile, sdk, api, desktop]
           example: "web"
         timestamp:
           type: integer
           format: int64
+          minimum: 0
           example: 1640995200
         custom_headers:
           type: object
@@ -1938,23 +2568,36 @@ components:
 
     ResponseMetadata:
       type: object
+      required:
+        - request_id
+        - protocol_version
+        - server_version
+        - timestamp
+        - processing_time_ms
       properties:
         request_id:
           type: string
           format: uuid
-        server_version:
-          type: string
-          example: "1.1.0"
+          example: "550e8400-e29b-41d4-a716-446655440000"
         protocol_version:
           type: string
-          example: "1.1.0"
+          pattern: '^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$'
+          example: "2.0.0"
+        server_version:
+          type: string
+          pattern: '^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$'
+          example: "2.0.0"
         timestamp:
           type: integer
           format: int64
+          minimum: 0
+          example: 1640995235
         processing_time_ms:
           type: integer
+          format: int32
+          minimum: 0
           example: 150
-        # Enterprise features v1.1.0
+        # Enterprise features v2.0.0
         rate_limit_info:
           $ref: '#/components/schemas/RateLimitInfo'
         cache_info:
@@ -1964,26 +2607,39 @@ components:
 
     ErrorResponse:
       type: object
+      required:
+        - error
       properties:
         error:
           type: object
+          required:
+            - error_code
+            - error_type
+            - message
           properties:
-            code:
+            error_code:
               type: string
+              pattern: '^[A-Z_]+$'
               example: "VALIDATION_FAILED"
-            type:
+            error_type:
               type: string
+              enum: [VALIDATION_ERROR, AUTHENTICATION_ERROR, AUTHORIZATION_ERROR, NOT_FOUND, CONFLICT, RATE_LIMIT_ERROR, INTERNAL_ERROR, EXTERNAL_ERROR, PROTOCOL_VERSION_ERROR]
               example: "VALIDATION_ERROR"
             message:
               type: string
+              maxLength: 1000
               example: "Query cannot be empty"
             field:
               type: string
+              maxLength: 100
               example: "query"
             details:
               type: string
+              maxLength: 5000
             metadata:
               type: object
+              additionalProperties:
+                type: string
 
     # Domain-specific schemas
     UserContext:
@@ -1997,8 +2653,29 @@ components:
         tenant_id:
           type: string
           format: uuid
+        roles:
+          type: array
+          items:
+            type: string
+          description: Роли пользователя
         location:
           $ref: '#/components/schemas/UserLocation'
+        locale:
+          type: string
+          description: Локаль пользователя (ru-RU, en-US)
+          example: "ru-RU"
+        timezone:
+          type: string
+          description: Часовой пояс (Europe/Moscow)
+          example: "Europe/Moscow"
+        currency:
+          type: string
+          description: Валюта (RUB, USD, EUR)
+          example: "RUB"
+        region:
+          type: string
+          description: Регион (RU, US, EU)
+          example: "RU"
 
     UserLocation:
       type: object
@@ -2038,8 +2715,58 @@ components:
           type: boolean
           default: true
 
+    AdvancedFilters:
+      type: object
+      description: Расширенные фильтры результатов
+      properties:
+        domains:
+          type: array
+          items:
+            type: string
+          description: Список доменов для включения
+        exclude_domains:
+          type: array
+          items:
+            type: string
+          description: Список доменов для исключения
+        min_relevance:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Минимальная релевантность (0-1)
+        max_results:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Максимальное количество результатов
+        sort_by:
+          type: string
+          enum: [relevance, date, rating]
+          description: Сортировка результатов
+        date_range:
+          $ref: '#/components/schemas/DateRange'
+
+    DateRange:
+      type: object
+      description: Диапазон дат
+      properties:
+        from:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Timestamp начала (Unix timestamp в секундах)
+        to:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Timestamp конца (Unix timestamp в секундах)
+
     ExecuteTemplateResponse:
       type: object
+      required:
+        - execution_id
+        - status
       properties:
         execution_id:
           type: string
@@ -2065,6 +2792,8 @@ components:
           $ref: '#/components/schemas/ExecutionMetadata'
         processing_time_ms:
           type: integer
+          format: int32
+          minimum: 0
         domain_analysis:
           $ref: '#/components/schemas/DomainAnalysisResult'
         response_metadata:
@@ -2074,70 +2803,104 @@ components:
 
     DomainSection:
       type: object
+      required:
+        - domain_id
+        - status
       properties:
         domain_id:
           type: string
           example: "commerce"
+          description: Идентификатор домена
         title:
           type: string
           example: "Product Recommendations"
+          description: Заголовок секции домена
         status:
           type: string
           enum: [success, error, timeout, partial]
+          description: Статус выполнения домена
         error:
           type: string
+          description: Сообщение об ошибке (если status = error)
         response_time_ms:
           type: integer
+          format: int32
+          minimum: 0
+          description: Время ответа домена в миллисекундах
         results:
           type: array
           items:
             $ref: '#/components/schemas/ResultItem'
+          description: Результаты из домена
 
     ResultItem:
       type: object
+      required:
+        - id
+        - type
+        - title
       properties:
         id:
           type: string
+          description: Уникальный идентификатор результата
         type:
           type: string
           example: "product"
+          description: Тип результата
         title:
           type: string
+          description: Заголовок результата
         description:
           type: string
+          description: Описание результата
         data:
           type: object
+          additionalProperties: true
+          description: Структурированные данные результата (может содержать сложные объекты: stores, addresses и т.д.)
         relevance:
           type: number
           format: float
           minimum: 0
           maximum: 1
+          description: Релевантность результата (0.0-1.0)
         confidence:
           type: number
           format: float
           minimum: 0
           maximum: 1
+          description: Уверенность в результате (0.0-1.0)
         actions:
           type: array
           items:
             $ref: '#/components/schemas/Action'
+          description: Доступные действия для результата
 
     Action:
       type: object
+      required:
+        - type
+        - label
       properties:
         type:
           type: string
           example: "add_to_cart"
+          description: Тип действия
         label:
           type: string
           example: "Добавить в корзину"
+          description: Текст кнопки/ссылки действия
         url:
           type: string
+          format: uri
+          description: URL для выполнения действия
         method:
           type: string
           enum: [GET, POST, PUT, DELETE]
+          default: POST
+          description: HTTP метод для выполнения действия
         confirm_text:
           type: string
+          description: Текст подтверждения действия (для диалога)
 
     WebSearchResult:
       type: object
@@ -2172,40 +2935,68 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RankedItem'
+          description: Ранжированные элементы
         algorithm:
           type: string
-          example: "relevance_score"
+          example: "weighted_relevance_confidence"
+          description: Алгоритм ранжирования, использованный для сортировки результатов
 
     RankedItem:
       type: object
+      required:
+        - id
+        - score
+        - rank
       properties:
         id:
           type: string
+          description: Идентификатор ранжированного элемента
         score:
           type: number
           format: float
+          minimum: 0
+          description: Оценка ранжирования
         rank:
           type: integer
+          format: int32
+          minimum: 1
+          description: Позиция в рейтинге (1-based)
 
     ExecutionMetadata:
       type: object
+      required:
+        - started_at
       properties:
         started_at:
           type: integer
           format: int64
+          minimum: 0
+          description: Время начала выполнения (Unix timestamp в секундах)
         completed_at:
           type: integer
           format: int64
+          minimum: 0
+          description: Время завершения выполнения (Unix timestamp в секундах)
         total_time_ms:
           type: integer
+          format: int64
+          minimum: 0
+          description: Общее время выполнения в миллисекундах
         domain_stats:
           type: object
           additionalProperties:
             type: integer
+          description: Статистика по каждому домену (domain_id -> количество результатов)
         domains_executed:
           type: integer
+          format: int32
+          minimum: 0
+          description: Количество выполненных доменов
         results_count:
           type: integer
+          format: int32
+          minimum: 0
+          description: Общее количество результатов
 
     TemplateExecution:
       type: object
@@ -2232,297 +3023,481 @@ components:
     DomainAnalysisResult:
       type: object
       description: Результат анализа выбора доменов
+      required:
+        - confidence
       properties:
         selected_domains:
           type: array
           items:
             $ref: '#/components/schemas/DomainSelection'
+          description: Выбранные домены для обработки запроса
         rejected_domains:
           type: array
           items:
             $ref: '#/components/schemas/DomainSelection'
+          description: Отклоненные домены (не подходят для запроса)
         confidence:
           type: number
           format: float
           minimum: 0
           maximum: 1
-          description: Общая уверенность анализа
+          description: Общая уверенность анализа (0.0-1.0)
         analysis_algorithm:
           type: string
           example: "hybrid_keyword_semantic"
+          description: Алгоритм анализа, использованный для выбора доменов
 
     DomainSelection:
       type: object
       description: Выбор домена с анализом
+      required:
+        - domain_id
+        - name
+        - type
+        - confidence
+        - relevance
+        - priority
       properties:
         domain_id:
           type: string
           example: "commerce"
+          description: Идентификатор домена
         name:
           type: string
           example: "Коммерция и покупки"
+          description: Название домена
         type:
           type: string
           example: "commerce"
+          description: Тип домена
         confidence:
           type: number
           format: float
           minimum: 0
           maximum: 1
+          description: Уверенность в выборе домена (0.0-1.0)
         relevance:
           type: number
           format: float
           minimum: 0
           maximum: 1
+          description: Релевантность домена для запроса (0.0-1.0)
         reason:
           type: string
+          description: Причина выбора/отклонения домена
         priority:
           type: integer
+          format: int32
           minimum: 0
           maximum: 100
+          description: Приоритет домена (0-100)
         metadata:
           type: object
           additionalProperties:
             type: string
+          description: Дополнительные метаданные домена
         capabilities:
           type: array
           items:
             $ref: '#/components/schemas/DomainCapability'
+          description: Возможности домена
 
     DomainCapability:
       type: object
       description: Возможности домена
+      required:
+        - type
       properties:
         type:
           type: string
           example: "search"
+          description: Тип возможности (search, purchase, booking, etc.)
         description:
           type: string
           example: "Поиск в домене"
+          description: Описание возможности
         parameters:
           type: object
           additionalProperties:
             type: string
+          description: Параметры возможности
+
+    PaginationInfo:
+      type: object
+      description: Информация о пагинации результатов
+      properties:
+        page:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Текущая страница (1-based)
+        page_size:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100
+          description: Размер страницы
+        total_pages:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Общее количество страниц
+        total_items:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Общее количество элементов
+        has_next:
+          type: boolean
+          description: Есть ли следующая страница
+        has_previous:
+          type: boolean
+          description: Есть ли предыдущая страница
+        next_cursor:
+          type: string
+          description: Курсор для следующей страницы (для cursor-based pagination)
+        prev_cursor:
+          type: string
+          description: Курсор для предыдущей страницы (для cursor-based pagination)
 
     ResponseQualityAnalysis:
       type: object
       description: Анализ качества ответа домена
+      required:
+        - domain_id
+        - overall_quality
       properties:
         domain_id:
           type: string
           example: "commerce"
+          description: Идентификатор домена
         overall_quality:
           type: number
           format: float
           minimum: 0
           maximum: 1
+          description: Общее качество ответа (0.0-1.0)
         relevance_score:
           type: number
           format: float
           minimum: 0
           maximum: 1
+          description: Оценка релевантности (0.0-1.0)
         completeness_score:
           type: number
           format: float
           minimum: 0
           maximum: 1
+          description: Оценка полноты (0.0-1.0)
         accuracy_score:
           type: number
           format: float
           minimum: 0
           maximum: 1
+          description: Оценка точности (0.0-1.0)
         helpfulness_score:
           type: number
           format: float
           minimum: 0
           maximum: 1
+          description: Оценка полезности (0.0-1.0)
         issues:
           type: array
           items:
             $ref: '#/components/schemas/QualityIssue'
+          description: Список проблем качества
         suggestions:
           type: array
           items:
             type: string
+          description: Предложения по улучшению
         metadata:
           type: object
           additionalProperties:
             type: string
+          description: Дополнительные метаданные анализа
 
     QualityIssue:
       type: object
       description: Проблема с качеством ответа
+      required:
+        - type
+        - severity
+        - description
       properties:
         type:
           type: string
           enum: [relevance, completeness, accuracy, helpfulness]
+          description: Тип проблемы качества
         severity:
           type: string
           enum: [low, medium, high, critical]
+          description: Серьезность проблемы
         description:
           type: string
+          description: Описание проблемы
         suggestion:
           type: string
+          description: Предложение по улучшению
 
     DomainRoutingDecision:
       type: object
       description: Решение о маршрутизации запроса
+      required:
+        - domain_id
+        - action
+        - priority
       properties:
         domain_id:
           type: string
+          description: Идентификатор домена
         action:
           type: string
           enum: [execute, reroute, skip, fallback]
+          description: Действие для домена
         priority:
           type: integer
+          format: int32
           minimum: 0
           maximum: 100
+          description: Приоритет домена (0-100)
         reason:
           type: string
+          description: Причина решения
         alternatives:
           type: array
           items:
             type: string
+          description: Альтернативные домены
         metadata:
           type: object
           additionalProperties: true
+          description: Дополнительные метаданные решения
 
     UserProfile:
       type: object
+      required:
+        - id
+        - email
+        - status
+        - created_at
       properties:
         id:
           type: string
           format: uuid
+          description: Уникальный идентификатор пользователя
         email:
           type: string
           format: email
+          description: Email адрес пользователя
         username:
           type: string
+          description: Имя пользователя
         first_name:
           type: string
+          description: Имя
         last_name:
           type: string
+          description: Фамилия
         status:
           type: string
           enum: [active, inactive, suspended]
+          description: Статус пользователя
         roles:
           type: array
           items:
             type: string
+          description: Роли пользователя
         created_at:
           type: integer
           format: int64
+          minimum: 0
+          description: Время создания аккаунта (Unix timestamp в секундах)
         last_login_at:
           type: integer
           format: int64
+          minimum: 0
+          description: Время последнего входа (Unix timestamp в секундах)
 
     Conversation:
       type: object
+      required:
+        - id
+        - user_id
+        - status
+        - created_at
       properties:
         id:
           type: string
           format: uuid
+          description: Уникальный идентификатор разговора
         user_id:
           type: string
           format: uuid
+          description: Идентификатор пользователя
         bot_id:
           type: string
           format: uuid
+          description: Идентификатор бота/AI ассистента
         title:
           type: string
+          description: Заголовок разговора
         status:
           type: string
           enum: [active, archived, deleted]
+          description: Статус разговора
         message_count:
           type: integer
+          format: int32
+          minimum: 0
+          description: Количество сообщений в разговоре
         created_at:
           type: string
           format: date-time
+          description: Время создания разговора
         last_activity:
           type: string
           format: date-time
+          description: Время последней активности
         messages:
           type: array
           items:
             $ref: '#/components/schemas/Message'
+          description: Список сообщений в разговоре
 
     Message:
       type: object
+      required:
+        - id
+        - conversation_id
+        - sender_type
+        - type
+        - content
+        - created_at
       properties:
         id:
           type: string
           format: uuid
+          description: Уникальный идентификатор сообщения
         conversation_id:
           type: string
           format: uuid
+          description: Идентификатор разговора
         sender_id:
           type: string
           format: uuid
+          description: Идентификатор отправителя
         sender_type:
           type: string
           enum: [user, assistant, system]
+          description: Тип отправителя
         type:
           type: string
           enum: [text, voice, image]
+          description: Тип содержимого сообщения
         content:
           type: string
+          description: Содержимое сообщения
         status:
           type: string
           enum: [sent, delivered, read, failed]
+          description: Статус доставки сообщения
         created_at:
           type: string
           format: date-time
+          description: Время создания сообщения
         intent:
           type: string
+          description: Определенный интент сообщения
 
     MessageResponse:
       type: object
+      required:
+        - conversation_id
+        - user_message
+        - ai_response
       properties:
         conversation_id:
           type: string
           format: uuid
+          description: Идентификатор разговора
         user_message:
           $ref: '#/components/schemas/Message'
+          description: Сообщение пользователя
         ai_response:
           $ref: '#/components/schemas/Message'
+          description: Ответ AI ассистента
         conversation_status:
           type: string
+          description: Статус разговора после обработки сообщения
         total_messages:
           type: integer
+          format: int32
+          minimum: 0
+          description: Общее количество сообщений в разговоре
 
     AnalyticsEvent:
       type: object
+      required:
+        - id
+        - event_type
+        - timestamp
       properties:
         id:
           type: string
           format: uuid
+          description: Уникальный идентификатор события
         event_type:
           type: string
+          description: Тип события (например, template_executed, user_login, etc.)
         user_id:
           type: string
           format: uuid
+          description: Идентификатор пользователя
         tenant_id:
           type: string
           format: uuid
+          description: Идентификатор тенанта
         data:
           type: object
+          additionalProperties: true
+          description: Дополнительные данные события
         timestamp:
           type: string
           format: date-time
+          description: Время события
 
     AnalyticsStats:
       type: object
+      required:
+        - period_days
+        - total_events
       properties:
         period_days:
           type: integer
+          format: int32
+          minimum: 1
+          description: Период анализа в днях
         total_events:
           type: integer
+          format: int64
+          minimum: 0
+          description: Общее количество событий за период
         total_users:
           type: integer
+          format: int32
+          minimum: 0
+          description: Общее количество уникальных пользователей
         active_users:
           type: integer
+          format: int32
+          minimum: 0
+          description: Количество активных пользователей
         events_today:
           type: integer
+          format: int32
+          minimum: 0
+          description: Количество событий сегодня
         top_events:
           type: array
           items:
@@ -2548,20 +3523,25 @@ components:
               total_events:
                 type: integer
 
-    # Enterprise Features v1.1.0
+    # Enterprise Features v2.0.0
     RateLimitInfo:
       type: object
       properties:
-        requests_remaining:
+        limit:
           type: integer
-          description: Remaining requests in current window
-        reset_time_seconds:
+          format: int32
+          minimum: 0
+          example: 1000
+        remaining:
           type: integer
-          description: Seconds until limit reset
-        limit_type:
-          type: string
-          enum: [per_user, per_tenant, global]
-          description: Type of rate limit
+          format: int32
+          minimum: 0
+          example: 950
+        reset_at:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 1640996100
 
     CacheInfo:
       type: object
@@ -2569,106 +3549,172 @@ components:
         cache_hit:
           type: boolean
           description: Whether result was served from cache
+          example: true
         cache_key:
           type: string
           description: Cache key used
-        ttl_remaining_seconds:
+          example: "template:query:hash"
+        cache_ttl:
           type: integer
-          description: Remaining TTL in seconds
+          format: int32
+          minimum: 0
+          description: Cache TTL in seconds
+          example: 300
 
     QuotaInfo:
       type: object
       properties:
-        daily_requests_used:
+        quota_used:
           type: integer
-          description: Requests used today
-        daily_requests_limit:
+          format: int64
+          minimum: 0
+          description: Quota used
+          example: 50000
+        quota_limit:
           type: integer
-          description: Daily request limit
-        monthly_requests_used:
-          type: integer
-          description: Requests used this month
-        monthly_requests_limit:
-          type: integer
-          description: Monthly request limit
+          format: int64
+          minimum: 0
+          description: Quota limit
+          example: 100000
+        quota_type:
+          type: string
+          enum: [requests, data, storage, bandwidth]
+          description: Type of quota
+          example: "requests"
 
     BatchResponse:
       type: object
+      required:
+        - batch_id
+        - responses
+        - batch_metadata
       properties:
         batch_id:
           type: string
           format: uuid
+          description: Уникальный идентификатор batch операции
         responses:
           type: array
           items:
             $ref: '#/components/schemas/ExecuteTemplateResponse'
+          description: Ответы на запросы в batch
         batch_metadata:
           $ref: '#/components/schemas/BatchMetadata'
+          description: Метаданные выполнения batch операции
 
     BatchMetadata:
       type: object
+      required:
+        - total_requests
+        - successful_requests
+        - failed_requests
+        - started_at
       properties:
         total_requests:
           type: integer
+          format: int32
+          minimum: 0
+          description: Общее количество запросов в batch
         successful_requests:
           type: integer
+          format: int32
+          minimum: 0
+          description: Количество успешных запросов
         failed_requests:
           type: integer
+          format: int32
+          minimum: 0
+          description: Количество неудачных запросов
         started_at:
           type: integer
           format: int64
+          minimum: 0
+          description: Время начала batch операции (Unix timestamp в секундах)
         completed_at:
           type: integer
           format: int64
+          minimum: 0
+          description: Время завершения batch операции (Unix timestamp в секундах)
         total_processing_time_ms:
           type: integer
+          format: int32
+          minimum: 0
+          description: Общее время обработки batch операции в миллисекундах
 
     WebhookConfig:
       type: object
+      required:
+        - url
+        - events
       properties:
         webhook_id:
           type: string
           format: uuid
+          description: Уникальный ID webhook (генерируется сервером)
         url:
           type: string
           format: uri
+          description: URL для отправки webhook
         events:
           type: array
           items:
             type: string
             enum: [template_executed, batch_completed, error_occurred]
+          minItems: 1
+          description: Список событий для подписки
         headers:
           type: object
           additionalProperties:
             type: string
+          description: Дополнительные заголовки для webhook запросов
         secret:
           type: string
+          minLength: 16
+          description: Secret для подписи webhook (минимум 16 символов)
         created_at:
           type: string
           format: date-time
+          description: Время создания webhook
 
     WebhookDelivery:
       type: object
+      required:
+        - delivery_id
+        - webhook_id
+        - event_type
+        - delivered_at
+        - status_code
       properties:
         delivery_id:
           type: string
           format: uuid
+          description: Уникальный идентификатор доставки
         webhook_id:
           type: string
           format: uuid
+          description: Идентификатор webhook
         event_type:
           type: string
+          description: Тип события
         payload:
           type: string
+          description: JSON payload события
         signature:
           type: string
+          description: HMAC подпись для верификации
         delivered_at:
           type: string
           format: date-time
+          description: Время доставки
         status_code:
           type: integer
+          format: int32
+          minimum: 100
+          maximum: 599
+          description: HTTP статус код ответа от получателя
         response_body:
           type: string
+          description: Тело ответа от получателя
 
   responses:
     ValidationError:

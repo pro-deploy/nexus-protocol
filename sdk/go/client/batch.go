@@ -6,33 +6,25 @@ import (
 	"github.com/pro-deploy/nexus-protocol/sdk/go/types"
 )
 
-// ExecuteBatch выполняет пакет операций.
-// Поддерживает выполнение нескольких операций в одном запросе.
+// ExecuteBatch выполняет пакет операций согласно протоколу v2.0.0.
+// Поддерживает выполнение нескольких template операций в одном запросе.
 // Полезно для enterprise сценариев с множественными операциями.
 //
 // Пример использования:
 //
 //	req := &types.BatchRequest{
-//		Operations: []types.BatchOperation{
+//		Requests: []*types.ExecuteTemplateRequest{
 //			{
-//				ID:   1,
-//				Type: "execute_template",
-//				Request: &types.ExecuteTemplateRequest{
-//					Query: "хочу борщ",
-//				},
+//				Query:    "хочу борщ",
+//				Language: "ru",
 //			},
 //			{
-//				ID:   2,
-//				Type: "log_event",
-//				Request: &types.LogEventRequest{
-//					EventType: "batch_operation",
-//					Data:      map[string]interface{}{"batch_size": 2},
-//				},
+//				Query:    "найди ресторан",
+//				Language: "ru",
 //			},
 //		},
-//		Options: &types.BatchOptions{
-//			Parallel: true,
-//			StopOnError: false,
+//		BatchOptions: &types.ExecuteOptions{
+//			ParallelExecution: true,
 //		},
 //	}
 //
@@ -49,53 +41,52 @@ func (c *Client) ExecuteBatch(ctx context.Context, req *types.BatchRequest) (*ty
 	}
 
 	var result struct {
-		Data types.BatchResponse `json:"data"`
+		Data     types.BatchResponse `json:"data"`
+		Metadata *types.ResponseMetadata `json:"metadata,omitempty"`
 	}
 
 	if err := c.parseResponse(resp, &result); err != nil {
 		return nil, err
 	}
 
+	// Устанавливаем ResponseMetadata если он есть
+	if result.Metadata != nil {
+		result.Data.ResponseMetadata = result.Metadata
+	}
+
 	return &result.Data, nil
 }
 
-// BatchBuilder помогает строить batch запросы
+// BatchBuilder помогает строить batch запросы согласно протоколу v2.0.0
 type BatchBuilder struct {
-	operations []types.BatchOperation
-	options    *types.BatchOptions
-	nextID     int
+	requests     []*types.ExecuteTemplateRequest
+	batchOptions *types.ExecuteOptions
 }
 
 // NewBatchBuilder создает новый BatchBuilder
 func NewBatchBuilder() *BatchBuilder {
 	return &BatchBuilder{
-		operations: make([]types.BatchOperation, 0),
-		nextID:     1,
+		requests: make([]*types.ExecuteTemplateRequest, 0),
 	}
 }
 
-// AddOperation добавляет операцию в batch
-func (b *BatchBuilder) AddOperation(operationType string, request interface{}) *BatchBuilder {
-	b.operations = append(b.operations, types.BatchOperation{
-		ID:      b.nextID,
-		Type:    operationType,
-		Request: request,
-	})
-	b.nextID++
+// AddRequest добавляет ExecuteTemplateRequest в batch
+func (b *BatchBuilder) AddRequest(req *types.ExecuteTemplateRequest) *BatchBuilder {
+	b.requests = append(b.requests, req)
 	return b
 }
 
-// SetOptions устанавливает опции batch выполнения
-func (b *BatchBuilder) SetOptions(options *types.BatchOptions) *BatchBuilder {
-	b.options = options
+// SetBatchOptions устанавливает опции batch выполнения
+func (b *BatchBuilder) SetBatchOptions(options *types.ExecuteOptions) *BatchBuilder {
+	b.batchOptions = options
 	return b
 }
 
-// Build создает BatchRequest
+// Build создает BatchRequest согласно протоколу v2.0.0
 func (b *BatchBuilder) Build() *types.BatchRequest {
 	return &types.BatchRequest{
-		Operations: b.operations,
-		Options:    b.options,
+		Requests:     b.requests,
+		BatchOptions: b.batchOptions,
 	}
 }
 

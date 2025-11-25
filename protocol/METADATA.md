@@ -16,8 +16,8 @@
 ```json
 {
   "request_id": "550e8400-e29b-41d4-a716-446655440000",
-  "protocol_version": "1.0.0",
-  "client_version": "1.0.0",
+  "protocol_version": "2.0.0",
+  "client_version": "2.0.0",
   "client_id": "web-app",
   "client_type": "web",
   "timestamp": 1640995200,
@@ -155,8 +155,8 @@
 ```json
 {
   "request_id": "550e8400-e29b-41d4-a716-446655440000",
-  "protocol_version": "1.0.0",
-  "server_version": "1.0.2",
+  "protocol_version": "2.0.0",
+  "server_version": "2.0.0",
   "timestamp": 1640995235,
   "processing_time_ms": 3500,
   "rate_limit_info": {
@@ -282,8 +282,8 @@ const requestId = uuid.v4();
 const request = {
   metadata: {
     request_id: requestId,
-    protocol_version: "1.0.0",
-    client_version: "1.0.0",
+    protocol_version: "2.0.0",
+    client_version: "2.0.0",
     timestamp: Date.now() / 1000
   },
   data: { query: "хочу борщ" }
@@ -293,8 +293,8 @@ const request = {
 const response = {
   metadata: {
     request_id: requestId, // Тот же ID
-    protocol_version: "1.0.0",
-    server_version: "1.0.2",
+    protocol_version: "2.0.0",
+    server_version: "2.0.0",
     timestamp: Date.now() / 1000,
     processing_time_ms: 3500
   },
@@ -308,8 +308,8 @@ const response = {
 // Клиент указывает версию протокола
 const metadata = {
   request_id: uuid.v4(),
-  protocol_version: "1.0.0", // Версия протокола клиента
-  client_version: "1.0.0",   // Версия клиентского приложения
+  protocol_version: "2.0.0", // Версия протокола клиента
+  client_version: "2.0.0",   // Версия клиентского приложения
   timestamp: Date.now() / 1000
 };
 
@@ -355,8 +355,8 @@ metrics.record({
 **Request Headers:**
 ```http
 X-Request-ID: 550e8400-e29b-41d4-a716-446655440000
-X-Protocol-Version: 1.0.0
-X-Client-Version: 1.0.0
+X-Protocol-Version: 2.0.0
+X-Client-Version: 2.0.0
 ```
 
 **Request Body:**
@@ -364,8 +364,8 @@ X-Client-Version: 1.0.0
 {
   "metadata": {
     "request_id": "550e8400-e29b-41d4-a716-446655440000",
-    "protocol_version": "1.0.0",
-    "client_version": "1.0.0",
+    "protocol_version": "2.0.0",
+    "client_version": "2.0.0",
     "timestamp": 1640995200
   },
   "data": { /* payload */ }
@@ -375,8 +375,8 @@ X-Client-Version: 1.0.0
 **Response Headers:**
 ```http
 X-Request-ID: 550e8400-e29b-41d4-a716-446655440000
-X-Protocol-Version: 1.0.0
-X-Server-Version: 1.0.2
+X-Protocol-Version: 2.0.0
+X-Server-Version: 2.0.0
 X-Processing-Time: 3500
 ```
 
@@ -407,8 +407,8 @@ message ResponseMetadata {
 ```go
 md := metadata.New(map[string]string{
     "request-id": "550e8400-e29b-41d4-a716-446655440000",
-    "protocol-version": "1.0.0",
-    "client-version": "1.0.0",
+    "protocol-version": "2.0.0",
+    "client-version": "2.0.0",
 })
 ctx := metadata.NewOutgoingContext(ctx, md)
 ```
@@ -484,7 +484,7 @@ const timestamp = new Date().toISOString();
 ```javascript
 // Всегда указывайте версию протокола
 const metadata = {
-  protocol_version: "1.0.0", // Версия протокола
+  protocol_version: "2.0.0", // Версия протокола
   client_version: package.version, // Версия клиента
 };
 ```

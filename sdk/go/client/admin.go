@@ -215,6 +215,87 @@ func (ac *AdminClient) InitializeDefaultDomains(ctx context.Context) error {
 	return nil
 }
 
+// ListIntegrations получает список интеграций
+func (ac *AdminClient) ListIntegrations(ctx context.Context, integrationType string) ([]*types.IntegrationConfig, error) {
+	path := PathAPIV1AdminIntegrations
+	if integrationType != "" {
+		path += "?type=" + integrationType
+	}
+	resp, err := ac.client.doRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list integrations: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var integrations []*types.IntegrationConfig
+	if err := ac.client.parseResponse(resp, &integrations); err != nil {
+		return nil, err
+	}
+	return integrations, nil
+}
+
+// GetIntegration получает интеграцию по ID
+func (ac *AdminClient) GetIntegration(ctx context.Context, id string) (*types.IntegrationConfig, error) {
+	path := fmt.Sprintf("%s/%s", PathAPIV1AdminIntegrations, id)
+	resp, err := ac.client.doRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get integration %s: %w", id, err)
+	}
+	defer resp.Body.Close()
+
+	var integration types.IntegrationConfig
+	if err := ac.client.parseResponse(resp, &integration); err != nil {
+		return nil, err
+	}
+	return &integration, nil
+}
+
+// CreateIntegration создает новую интеграцию
+func (ac *AdminClient) CreateIntegration(ctx context.Context, config *types.IntegrationConfig) (*types.IntegrationConfig, error) {
+	resp, err := ac.client.doRequest(ctx, http.MethodPost, PathAPIV1AdminIntegrations, config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create integration: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var created types.IntegrationConfig
+	if err := ac.client.parseResponse(resp, &created); err != nil {
+		return nil, err
+	}
+	return &created, nil
+}
+
+// UpdateIntegration обновляет интеграцию
+func (ac *AdminClient) UpdateIntegration(ctx context.Context, id string, config *types.IntegrationConfig) (*types.IntegrationConfig, error) {
+	path := fmt.Sprintf("%s/%s", PathAPIV1AdminIntegrations, id)
+	resp, err := ac.client.doRequest(ctx, http.MethodPut, path, config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update integration %s: %w", id, err)
+	}
+	defer resp.Body.Close()
+
+	var updated types.IntegrationConfig
+	if err := ac.client.parseResponse(resp, &updated); err != nil {
+		return nil, err
+	}
+	return &updated, nil
+}
+
+// DeleteIntegration удаляет интеграцию
+func (ac *AdminClient) DeleteIntegration(ctx context.Context, id string) error {
+	path := fmt.Sprintf("%s/%s", PathAPIV1AdminIntegrations, id)
+	resp, err := ac.client.doRequest(ctx, http.MethodDelete, path, nil)
+	if err != nil {
+		return fmt.Errorf("failed to delete integration %s: %w", id, err)
+	}
+	defer resp.Body.Close()
+
+	if err := ac.client.parseResponse(resp, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
 // GetVersion получает информацию о версии системы
 func (ac *AdminClient) GetVersion(ctx context.Context) (map[string]string, error) {
 	resp, err := ac.client.doRequest(ctx, http.MethodGet, PathAPIV1AdminVersion, nil)
